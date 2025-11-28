@@ -91,6 +91,7 @@
 }
 
 .action-icon {
+  font-size: 36px;
   color: #5a4a3f;
   cursor: pointer;
   transition: color 0.2s;
@@ -224,9 +225,27 @@
   background-color: #7b4739;
   border-radius: 15px;
   padding: 25px;
-  position: relative;
   max-height: 400px;
-  overflow: hidden;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar */
+.lyrics-box::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lyrics-box::-webkit-scrollbar-track {
+  background: #5a3a30;
+  border-radius: 4px;
+}
+
+.lyrics-box::-webkit-scrollbar-thumb {
+  background: #d4a574;
+  border-radius: 4px;
+}
+
+.lyrics-box::-webkit-scrollbar-thumb:hover {
+  background: #e8dcc8;
 }
 
 .lyrics-title {
@@ -242,32 +261,6 @@
   font-style: italic;
   line-height: 1.8;
   white-space: pre-wrap;
-  overflow-y: auto;
-  max-height: 300px;
-  padding-right: 40px;
-}
-
-.lyrics-nav-buttons {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.lyrics-nav {
-  background: none;
-  border: none;
-  color: #d4a574;
-  font-size: 32px;
-  cursor: pointer;
-  padding: 5px;
-}
-
-.lyrics-nav:hover {
-  color: #f5f5f5;
 }
 
 .lyrics-placeholder {

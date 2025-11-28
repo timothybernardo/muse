@@ -384,27 +384,13 @@ function AlbumDetail() {
                 <>
                   <h3 className="lyrics-title">lyrics from "{selectedTrack.name}"</h3>
                   {lyricsLoading ? (
-                    <p className="lyrics-placeholder">Loading lyrics...</p>
+                    <p className="lyrics-placeholder">loading lyrics...</p>
                   ) : (
-                    <>
-                      <p className="lyrics-content">{getCurrentLyricsPage()}</p>
-                      <div className="lyrics-nav-buttons">
-                        {hasPrevLyrics() && (
-                          <button className="lyrics-nav prev" onClick={() => setLyricsPage(prev => prev - 1)}>
-                            ‹
-                          </button>
-                        )}
-                        {hasMoreLyrics() && (
-                          <button className="lyrics-nav next" onClick={() => setLyricsPage(prev => prev + 1)}>
-                            ›
-                          </button>
-                        )}
-                      </div>
-                    </>
+                    <p className="lyrics-content">{lyrics}</p>
                   )}
                 </>
               ) : (
-                <p className="lyrics-placeholder">Select a track to view lyrics</p>
+                <p className="lyrics-placeholder">select a track to view lyrics</p>
               )}
             </div>
           </div>
