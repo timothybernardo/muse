@@ -1,67 +1,125 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { authService } from '../../services/supabase'
+import logo from '../../assets/logo.png'
+import './Auth.css'
 
 function Login() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [forgotMode, setForgotMode] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setMessage('')
+    setLoading(true)
+
+    try {
+      await authService.signIn(email, password)
+    } catch (err) {
+      setError(err.message || 'Failed to sign in')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault()
+    setError('')
+    setMessage('')
+    
+    if (!email) {
+      setError('Please enter your email address')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      await authService.resetPassword(email)
+      setMessage('Check your email for a password reset link!')
+      setForgotMode(false)
+    } catch (err) {
+      setError(err.message || 'Failed to send reset email')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div style={{ 
-      backgroundColor: '#2b1a00',
-      minHeight: '100vh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      color: 'white'
-    }}>
-      <div style={{
-        backgroundColor: '#7b4739',
-        padding: '40px',
-        borderRadius: '20px',
-        textAlign: 'center'
-      }}>
-        <h1 style={{ fontWeight: 'normal' }}>muse</h1>
-        <p style={{ fontStyle: 'italic', fontWeight: 'normal' }}>
-          discover and review your<br />next favorite album.
-        </p>
-        <form style={{ marginTop: '20px' }}>
-          <input 
-            type="email" 
-            placeholder="email"
-            style={{
-              width: '100%',
-              padding: '10px',
-              marginBottom: '10px',
-              borderRadius: '20px',
-              border: 'none',
-              backgroundColor: '#4a3a2a',
-              color: 'white'
-            }}
-          />
-          <input 
-            type="password" 
-            placeholder="password"
-            style={{
-              width: '100%',
-              padding: '10px',
-              marginBottom: '20px',
-              borderRadius: '20px',
-              border: 'none',
-              backgroundColor: '#4a3a2a',
-              color: 'white'
-            }}
-          />
-          <button style={{
-            padding: '10px 40px',
-            borderRadius: '20px',
-            border: 'none',
-            backgroundColor: '#af9d82',
-            color: '#2b1a00',
-            cursor: 'pointer',
-            fontFamily: 'inherit'
-          }}>
-            login
-          </button>
-        </form>
-        <p style={{ marginTop: '20px' }}>
-          don't have an account? <Link to="/signup" style={{ color: '#af9d82' }}>sign up</Link>
+    <div className="auth-container">
+      <Link to="/" className="auth-logo-link">
+        <img src={logo} alt="Muse logo" className="auth-logo" />
+      </Link>
+      <Link to="/" className="auth-title-link">
+        <h1 className="auth-title">muse</h1>
+      </Link>
+      <p className="auth-tagline">
+        discover and review your<br />next favorite album.
+      </p>
+
+      <div className="auth-box">
+        {forgotMode ? (
+          <form onSubmit={handleForgotPassword} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <input
+              type="email"
+              placeholder="email"
+              className="auth-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            
+            {error && <p className="auth-error">{error}</p>}
+            {message && <p className="auth-message">{message}</p>}
+            
+            <button type="submit" className="auth-button" disabled={loading}>
+              {loading ? 'sending...' : 'reset password'}
+            </button>
+            
+            <span className="forgot-password" onClick={() => setForgotMode(false)}>
+              back to login
+            </span>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <input
+              type="email"
+              placeholder="email"
+              className="auth-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="password"
+              className="auth-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            
+            <span className="forgot-password" onClick={() => setForgotMode(true)}>
+              forgot password?
+            </span>
+            
+            {error && <p className="auth-error">{error}</p>}
+            {message && <p className="auth-message">{message}</p>}
+            
+            <button type="submit" className="auth-button" disabled={loading}>
+              {loading ? 'logging in...' : 'login'}
+            </button>
+          </form>
+        )}
+        
+        <p className="auth-switch">
+          don't have an account?
+          <Link to="/signup">sign up</Link>
         </p>
       </div>
     </div>
