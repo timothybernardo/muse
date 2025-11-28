@@ -1,0 +1,170 @@
+.albums-page {
+  min-height: 100vh;
+  background-color: #2b1a00;
+  padding: 40px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header */
+.albums-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.albums-greeting {
+  font-size: 42px;
+  font-style: italic;
+  color: #e8dcc8;
+  font-weight: normal;
+}
+
+.albums-greeting .username {
+  font-weight: bold;
+}
+
+/* Sections */
+.albums-section {
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 50px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: normal;
+  color: #f5f5f5;
+  margin-bottom: 10px;
+}
+
+.section-line {
+  width: 100%;
+  height: 1px;
+  background-color: #5a4a3f;
+  margin-bottom: 25px;
+}
+
+/* Albums Grid */
+.albums-grid-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.albums-grid {
+  display: flex;
+  gap: 30px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.album-card {
+  flex-shrink: 0;
+  width: 180px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.album-card:hover {
+  transform: scale(1.03);
+}
+
+.album-cover {
+  width: 180px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.album-stats {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 5px;
+  font-size: 13px;
+  color: #c4b8a8;
+}
+
+.album-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.album-rating {
+  display: flex;
+  gap: 2px;
+}
+
+.star {
+  font-size: 16px;
+}
+
+.star.filled {
+  color: #d4a574;
+}
+
+.star.half {
+  color: #d4a574;
+}
+
+.star.empty {
+  color: #5a4a3f;
+}
+
+/* Carousel Button */
+.carousel-btn {
+  background: none;
+  border: none;
+  color: #d4a574;
+  font-size: 48px;
+  cursor: pointer;
+  padding: 0 15px;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.carousel-btn:hover {
+  color: #f5f5f5;
+}
+
+.carousel-btn:disabled {
+  color: #5a4a3f;
+  cursor: not-allowed;
+}
+
+/* Genre Pills */
+.genre-pills {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 25px;
+}
+
+.genre-pill {
+  background-color: transparent;
+  border: 1px solid #5a4a3f;
+  color: #c4b8a8;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.genre-pill:hover,
+.genre-pill.active {
+  background-color: #d4c4a8;
+  border-color: #d4c4a8;
+  color: #2b1a00;
+}
+
+/* Loading State */
+.loading-text {
+  color: #c4b8a8;
+  font-size: 16px;
+  text-align: center;
+  padding: 40px;
+}
