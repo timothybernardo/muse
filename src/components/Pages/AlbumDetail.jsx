@@ -30,82 +30,113 @@ function AlbumDetail() {
   const [selectedTrack, setSelectedTrack] = useState(null)
   const [lyrics, setLyrics] = useState('')
   const [lyricsLoading, setLyricsLoading] = useState(false)
-  const [lyricsPage, setLyricsPage] = useState(0)
-  const lyricsPerPage = 500
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setCurrentUser(user)
-
-        const albumData = await spotifyService.getAlbum(id)
-        setAlbum(albumData)
-
-        const { data: reviewsData } = await supabase
-          .from('reviews')
-          .select(`*, profiles:user_id (username, avatar_url)`)
-          .eq('album_id', id)
-          .order('created_at', { ascending: false })
-
-        if (reviewsData) {
-          setReviews(reviewsData)
-          if (reviewsData.length > 0) {
-            const avg = reviewsData.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsData.length
-            setAverageRating(avg)
-          }
-        }
-
-        const { count } = await supabase
-          .from('listens')
-          .select('*', { count: 'exact', head: true })
-          .eq('album_id', id)
-        setListenCount(count || 0)
-
-        if (user) {
-          const { data: listenData } = await supabase
-            .from('listens')
-            .select('id')
-            .eq('album_id', id)
-            .eq('user_id', user.id)
-            .maybeSingle()
-          setHasListened(!!listenData)
-
-          const { data: userReview } = await supabase
-            .from('reviews')
-            .select('rating, review_text')
-            .eq('album_id', id)
-            .eq('user_id', user.id)
-            .maybeSingle()
-          if (userReview) {
-            setUserRating(userReview.rating || 0)
-          }
-        }
-
-      } catch (error) {
-        console.error('Error fetching album:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchData()
   }, [id])
 
+  const fetchReviews = async () => {
+    // Fetch reviews without join
+    const { data: reviewsData, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('album_id', id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching reviews:', error)
+      return []
+    }
+
+    if (reviewsData && reviewsData.length > 0) {
+      // Fetch profiles separately for each review
+      const reviewsWithProfiles = await Promise.all(
+        reviewsData.map(async (review) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', review.user_id)
+            .single()
+          return { ...review, profiles: profile }
+        })
+      )
+      return reviewsWithProfiles
+    }
+    return []
+  }
+
+  const fetchData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUser(user)
+
+      const albumData = await spotifyService.getAlbum(id)
+      setAlbum(albumData)
+
+      const reviewsData = await fetchReviews()
+      setReviews(reviewsData)
+      
+      if (reviewsData.length > 0) {
+        const avg = reviewsData.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsData.length
+        setAverageRating(avg)
+      }
+
+      const { count } = await supabase
+        .from('listens')
+        .select('*', { count: 'exact', head: true })
+        .eq('album_id', id)
+      setListenCount(count || 0)
+
+      if (user) {
+        const { data: listenData } = await supabase
+          .from('listens')
+          .select('id')
+          .eq('album_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+        setHasListened(!!listenData)
+
+        const { data: userReview } = await supabase
+          .from('reviews')
+          .select('rating, review_text')
+          .eq('album_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (userReview) {
+          setUserRating(userReview.rating || 0)
+          setReviewText(userReview.review_text || '')
+        }
+      }
+
+    } catch (error) {
+      console.error('Error fetching album:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleRatingClick = async (rating) => {
-    if (!currentUser) return
+    if (!currentUser) {
+      alert('Please log in to rate albums')
+      return
+    }
 
     setUserRating(rating)
     
+    // Mark as listened if not already
     if (!hasListened) {
-      await supabase.from('listens').insert({
+      const { error: listenError } = await supabase.from('listens').insert({
         user_id: currentUser.id,
-        album_id: id
+        album_id: id,
+        listened_at: new Date().toISOString()
       })
-      setHasListened(true)
-      setListenCount(prev => prev + 1)
+      if (!listenError) {
+        setHasListened(true)
+        setListenCount(prev => prev + 1)
+      }
     }
 
+    // Check if review exists
     const { data: existing } = await supabase
       .from('reviews')
       .select('id')
@@ -114,64 +145,114 @@ function AlbumDetail() {
       .maybeSingle()
 
     if (existing) {
-      await supabase
+      // Update existing review
+      const { error } = await supabase
         .from('reviews')
         .update({ rating })
         .eq('id', existing.id)
+      
+      if (error) console.error('Error updating rating:', error)
     } else {
-      await supabase.from('reviews').insert({
+      // Insert new review
+      const { error } = await supabase.from('reviews').insert({
         user_id: currentUser.id,
         album_id: id,
         rating
       })
+      
+      if (error) console.error('Error inserting rating:', error)
     }
 
-    const { data: reviewsData } = await supabase
-      .from('reviews')
-      .select(`*, profiles:user_id (username, avatar_url)`)
-      .eq('album_id', id)
-      .order('created_at', { ascending: false })
-    
-    if (reviewsData) {
-      setReviews(reviewsData)
+    // Refresh reviews
+    const reviewsData = await fetchReviews()
+    setReviews(reviewsData)
+    if (reviewsData.length > 0) {
       const avg = reviewsData.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsData.length
       setAverageRating(avg)
     }
   }
 
   const handleListenClick = async () => {
-    if (!currentUser) return
+    if (!currentUser) {
+      alert('Please log in to mark albums as listened')
+      return
+    }
 
     if (hasListened) {
-      await supabase
+      const { error } = await supabase
         .from('listens')
         .delete()
         .eq('user_id', currentUser.id)
         .eq('album_id', id)
-      setHasListened(false)
-      setListenCount(prev => prev - 1)
+      
+      if (error) {
+        console.error('Error removing listen:', error)
+      } else {
+        setHasListened(false)
+        setListenCount(prev => prev - 1)
+      }
     } else {
-      await supabase.from('listens').insert({
+      // Check if already exists first
+      const { data: existing } = await supabase
+        .from('listens')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .eq('album_id', id)
+        .maybeSingle()
+      
+      if (existing) {
+        // Already listened, just update state
+        setHasListened(true)
+        return
+      }
+
+      const { error } = await supabase.from('listens').insert({
         user_id: currentUser.id,
-        album_id: id
+        album_id: id,
+        listened_at: new Date().toISOString()
       })
-      setHasListened(true)
-      setListenCount(prev => prev + 1)
+      
+      if (error) {
+        // If duplicate error, just set as listened
+        if (error.code === '23505' || error.code === '409') {
+          setHasListened(true)
+        } else {
+          console.error('Error adding listen:', error)
+        }
+      } else {
+        setHasListened(true)
+        setListenCount(prev => prev + 1)
+      }
     }
   }
 
   const handleSubmitReview = async () => {
-    if (!currentUser || !modalRating) return
-
-    if (!hasListened) {
-      await supabase.from('listens').insert({
-        user_id: currentUser.id,
-        album_id: id
-      })
-      setHasListened(true)
-      setListenCount(prev => prev + 1)
+    if (!currentUser) {
+      alert('Please log in to write reviews')
+      return
+    }
+    
+    if (!modalRating) {
+      alert('Please select a rating')
+      return
     }
 
+    // Mark as listened if not already
+    if (!hasListened) {
+      const { error: listenError } = await supabase.from('listens').insert({
+        user_id: currentUser.id,
+        album_id: id,
+        listened_at: new Date().toISOString()
+      })
+      if (listenError) {
+        console.error('Error adding listen:', listenError)
+      } else {
+        setHasListened(true)
+        setListenCount(prev => prev + 1)
+      }
+    }
+
+    // Check if review exists
     const { data: existing } = await supabase
       .from('reviews')
       .select('id')
@@ -180,31 +261,40 @@ function AlbumDetail() {
       .maybeSingle()
 
     if (existing) {
-      await supabase
+      // Update existing review
+      const { error } = await supabase
         .from('reviews')
         .update({ rating: modalRating, review_text: reviewText })
         .eq('id', existing.id)
+      
+      if (error) {
+        console.error('Error updating review:', error)
+        alert('Error updating review: ' + error.message)
+        return
+      }
     } else {
-      await supabase.from('reviews').insert({
+      // Insert new review
+      const { error } = await supabase.from('reviews').insert({
         user_id: currentUser.id,
         album_id: id,
         rating: modalRating,
         review_text: reviewText
       })
+      
+      if (error) {
+        console.error('Error inserting review:', error)
+        alert('Error saving review: ' + error.message)
+        return
+      }
     }
 
     setUserRating(modalRating)
     setShowReviewModal(false)
-    setReviewText('')
 
-    const { data: reviewsData } = await supabase
-      .from('reviews')
-      .select(`*, profiles:user_id (username, avatar_url)`)
-      .eq('album_id', id)
-      .order('created_at', { ascending: false })
-    
-    if (reviewsData) {
-      setReviews(reviewsData)
+    // Refresh reviews
+    const reviewsData = await fetchReviews()
+    setReviews(reviewsData)
+    if (reviewsData.length > 0) {
       const avg = reviewsData.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsData.length
       setAverageRating(avg)
     }
@@ -234,7 +324,6 @@ function AlbumDetail() {
 
   const handleTrackClick = async (track) => {
     setSelectedTrack(track)
-    setLyricsPage(0)
     setLyrics('')
     setLyricsLoading(true)
 
@@ -255,27 +344,12 @@ function AlbumDetail() {
     }
   }
 
-  const getCurrentLyricsPage = () => {
-    if (!lyrics) return ''
-    const start = lyricsPage * lyricsPerPage
-    const end = start + lyricsPerPage
-    return lyrics.slice(start, end)
-  }
-
-  const hasMoreLyrics = () => {
-    return lyrics && (lyricsPage + 1) * lyricsPerPage < lyrics.length
-  }
-
-  const hasPrevLyrics = () => {
-    return lyricsPage > 0
-  }
-
   if (loading) {
-    return <div className="album-detail-page"><p className="loading-text">Loading album...</p></div>
+    return <div className="album-detail-page"><p className="loading-text">loading album...</p></div>
   }
 
   if (!album) {
-    return <div className="album-detail-page"><p className="loading-text">Album not found</p></div>
+    return <div className="album-detail-page"><p className="loading-text">album not found</p></div>
   }
 
   const releaseDate = new Date(album.release_date).toLocaleDateString('en-US', {
@@ -404,7 +478,11 @@ function AlbumDetail() {
             reviews.map(review => (
               <div key={review.id} className="review-card">
                 <div className="review-header">
-                  <div className="review-user">
+                  <div 
+                    className="review-user"
+                    onClick={() => navigate(`/profile/${review.user_id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     {review.profiles?.avatar_url ? (
                       <img src={review.profiles.avatar_url} alt="" className="review-avatar" />
                     ) : (
@@ -412,7 +490,6 @@ function AlbumDetail() {
                     )}
                     <span className="review-username">
                       {review.profiles?.username || 'User'}
-                      <span className="review-count">{reviews.filter(r => r.user_id === review.user_id).length} reviews</span>
                     </span>
                   </div>
                   <div className="review-stars">
@@ -421,6 +498,20 @@ function AlbumDetail() {
                 </div>
                 {review.review_text && (
                   <p className="review-text">{review.review_text}</p>
+                )}
+                {currentUser?.id === review.user_id && (
+                  <div className="review-actions">
+                    <button 
+                      className="edit-review-btn"
+                      onClick={() => {
+                        setModalRating(review.rating || 0)
+                        setReviewText(review.review_text || '')
+                        setShowReviewModal(true)
+                      }}
+                    >
+                      edit review
+                    </button>
+                  </div>
                 )}
               </div>
             ))

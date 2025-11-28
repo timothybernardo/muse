@@ -1,0 +1,555 @@
+.playlist-detail-page {
+  min-height: 100vh;
+  background-color: #2b1a00;
+  padding: 40px 60px;
+}
+
+.playlist-detail-content {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Playlist Header */
+.playlist-header {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #5a4a3f;
+  margin-bottom: 40px;
+}
+
+.playlist-covers {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  width: 150px;
+  height: 150px;
+  flex-shrink: 0;
+}
+
+.playlist-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  background-color: #7b4739;
+}
+
+.playlist-info {
+  flex: 1;
+}
+
+.playlist-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 5px;
+}
+
+.playlist-song-count {
+  font-size: 16px;
+  color: #c4b8a8;
+  margin-left: 15px;
+  font-weight: normal;
+}
+
+.playlist-description {
+  font-size: 14px;
+  color: #c4b8a8;
+}
+
+.playlist-creator {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-decoration: none;
+  margin-left: auto;
+}
+
+.creator-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #7b4739;
+}
+
+.creator-info {
+  text-align: right;
+}
+
+.creator-label {
+  font-size: 12px;
+  color: #c4b8a8;
+}
+
+.creator-name {
+  font-size: 24px;
+  font-weight: bold;
+  color: #f5f5f5;
+}
+
+/* Song List */
+.song-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid #3a2a1a;
+}
+
+.song-cover {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.song-cover:hover {
+  transform: scale(1.03);
+}
+
+.song-info {
+  flex: 1;
+}
+
+.song-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 5px;
+}
+
+.song-artist {
+  font-size: 14px;
+  color: #c4b8a8;
+  margin-bottom: 8px;
+}
+
+.song-artist .album-name {
+  font-weight: bold;
+  color: #f5f5f5;
+}
+
+.song-note {
+  font-size: 13px;
+  color: #a09080;
+  font-style: italic;
+}
+
+.song-position {
+  font-size: 32px;
+  font-weight: bold;
+  color: #5a4a3f;
+  width: 50px;
+  text-align: center;
+}
+
+/* Add Song Button */
+.add-song-btn {
+  background-color: #7b4739;
+  border: none;
+  color: #f5f5f5;
+  padding: 15px 30px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 30px;
+}
+
+.add-song-btn:hover {
+  background-color: #8b5749;
+}
+
+/* Lyrics Modal */
+.lyrics-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.lyrics-modal {
+  background-color: #7b4739;
+  border-radius: 20px;
+  padding: 30px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.lyrics-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.lyrics-modal-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #f5f5f5;
+}
+
+.lyrics-modal-close {
+  background: none;
+  border: none;
+  color: #c4b8a8;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.lyrics-modal-close:hover {
+  color: #f5f5f5;
+}
+
+.lyrics-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 14px;
+  color: #e8dcc8;
+  font-style: italic;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+/* Custom scrollbar for lyrics */
+.lyrics-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lyrics-modal-content::-webkit-scrollbar-track {
+  background: #5a3a30;
+  border-radius: 4px;
+}
+
+.lyrics-modal-content::-webkit-scrollbar-thumb {
+  background: #d4a574;
+  border-radius: 4px;
+}
+
+.lyrics-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #e8dcc8;
+}
+
+.lyrics-loading {
+  color: #c4b8a8;
+  text-align: center;
+  padding: 40px;
+}
+
+/* Empty State */
+.empty-state {
+  color: #c4b8a8;
+  text-align: center;
+  padding: 60px;
+  font-style: italic;
+}
+
+/* Add Song Modal */
+.add-song-modal {
+  background-color: #7b4739;
+  border-radius: 20px;
+  padding: 30px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.add-song-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.add-song-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #f5f5f5;
+}
+
+.add-song-close {
+  background: none;
+  border: none;
+  color: #c4b8a8;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.add-song-close:hover {
+  color: #f5f5f5;
+}
+
+.search-input-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 25px;
+  border: none;
+  background-color: #4a3028;
+  color: #f5f5f5;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: #c4b8a8;
+}
+
+.search-btn {
+  padding: 12px 25px;
+  border-radius: 25px;
+  border: none;
+  background-color: #d4c4a8;
+  color: #2b1a00;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.search-btn:hover {
+  background-color: #e8dcc8;
+}
+
+.search-results {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+  background-color: #8b5749;
+}
+
+.search-result-item.selected {
+  background-color: #8b5749;
+  border: 2px solid #d4c4a8;
+}
+
+.search-result-cover {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.search-result-info {
+  flex: 1;
+}
+
+.search-result-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 3px;
+}
+
+.search-result-artist {
+  font-size: 12px;
+  color: #c4b8a8;
+}
+
+.search-result-album {
+  font-size: 11px;
+  color: #a09080;
+}
+
+.note-input {
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 15px;
+  border: none;
+  background-color: #4a3028;
+  color: #f5f5f5;
+  font-size: 14px;
+  font-family: inherit;
+  margin-bottom: 20px;
+  resize: none;
+}
+
+.note-input::placeholder {
+  color: #c4b8a8;
+}
+
+.add-song-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.add-song-modal-btn {
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.add-song-modal-btn.add {
+  background-color: #d4c4a8;
+  color: #2b1a00;
+  border: none;
+}
+
+.add-song-modal-btn.add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-song-modal-btn.cancel {
+  background-color: transparent;
+  color: #f5f5f5;
+  border: 1px solid #f5f5f5;
+}
+
+.no-results {
+  color: #c4b8a8;
+  text-align: center;
+  padding: 30px;
+  font-style: italic;
+}
+
+/* Custom scrollbar for search results */
+.search-results::-webkit-scrollbar {
+  width: 8px;
+}
+
+.search-results::-webkit-scrollbar-track {
+  background: #5a3a30;
+  border-radius: 4px;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+  background: #d4a574;
+  border-radius: 4px;
+}
+
+/* Loading */
+.loading-text {
+  color: #c4b8a8;
+  text-align: center;
+  padding: 40px;
+}
+
+/* Remove Song Button */
+.remove-song-btn {
+  background: none;
+  border: none;
+  color: #c4b8a8;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px 10px;
+  margin-left: 10px;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.song-item:hover .remove-song-btn {
+  opacity: 1;
+}
+
+.remove-song-btn:hover {
+  color: #ff6b6b;
+}
+
+/* Delete Playlist Button */
+.delete-playlist-btn {
+  background: none;
+  border: 1px solid #ff6b6b;
+  color: #ff6b6b;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.delete-playlist-btn:hover {
+  background-color: #ff6b6b;
+  color: #2b1a00;
+}
+
+/* Delete Confirmation Modal */
+.delete-confirm-modal {
+  background-color: #7b4739;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.delete-confirm-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 15px;
+}
+
+.delete-confirm-text {
+  color: #c4b8a8;
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+
+.delete-confirm-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.delete-confirm-btn {
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.delete-confirm-btn.cancel {
+  background-color: transparent;
+  color: #f5f5f5;
+  border: 1px solid #f5f5f5;
+}
+
+.delete-confirm-btn.delete {
+  background-color: #ff6b6b;
+  color: #fff;
+  border: none;
+}
+
+.delete-confirm-btn.delete:hover {
+  background-color: #ff5252;
+}

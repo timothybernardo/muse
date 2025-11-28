@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
+import { spotifyService } from '../../services/spotify'
 import './Profile.css'
 
 function Profile() {
   const { userId } = useParams()
+  const navigate = useNavigate()
   const [currentUser, setCurrentUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -15,69 +17,161 @@ function Profile() {
   const [avatarPreview, setAvatarPreview] = useState(null)
   const fileInputRef = useRef(null)
 
-  // Placeholder data - replace with real data from Supabase later
+  // Real data
   const [stats, setStats] = useState({
     albumsListened: 0,
     averageRating: 0,
     playlistCount: 0
   })
+  const [reviews, setReviews] = useState([])
+  const [recentlyListened, setRecentlyListened] = useState([])
+  const [playlists, setPlaylists] = useState([])
+  const [favoriteAlbums, setFavoriteAlbums] = useState([])
 
-  const [favoriteAlbums, setFavoriteAlbums] = useState([
-    { id: 1, title: 'Thriller', cover: 'https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png', listens: '1k', reviews: 100, rating: 5 },
-    { id: 2, title: 'Hurry Up Tomorrow', cover: 'https://upload.wikimedia.org/wikipedia/en/f/f0/The_Weeknd_-_Hurry_Up_Tomorrow.png', listens: '1k', reviews: 100, rating: 3 },
-    { id: 3, title: 'Utopia', cover: 'https://i.scdn.co/image/ab67616d00001e0204481c826dd292e5e4983b3f', listens: '1k', reviews: 100, rating: 4 },
-    { id: 4, title: 'Cry', cover: 'https://images.genius.com/7f53e3ec9752c0f901d9d1370b569507.1000x1000x1.jpg', listens: '1k', reviews: 100, rating: 3.5 },
-  ])
-
-  const [recentlyListened, setRecentlyListened] = useState([
-    { id: 1, title: 'Thriller', cover: 'https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png', listens: '1k', reviews: 100, rating: 5 },
-    { id: 2, title: 'Hurry Up Tomorrow', cover: 'https://upload.wikimedia.org/wikipedia/en/f/f0/The_Weeknd_-_Hurry_Up_Tomorrow.png', listens: '1k', reviews: 100, rating: 3 },
-    { id: 3, title: 'Utopia', cover: 'https://i.scdn.co/image/ab67616d00001e0204481c826dd292e5e4983b3f', listens: '1k', reviews: 100, rating: 4 },
-    { id: 4, title: 'Cry', cover: 'https://images.genius.com/7f53e3ec9752c0f901d9d1370b569507.1000x1000x1.jpg', listens: '1k', reviews: 100, rating: 3.5 },
-  ])
-
-  const [playlists, setPlaylists] = useState([
-    {
-      id: 1,
-      name: '2025 highlights',
-      description: 'playlist description',
-      albums: [
-        'https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png',
-        'https://upload.wikimedia.org/wikipedia/en/f/f0/The_Weeknd_-_Hurry_Up_Tomorrow.png',
-        'https://i.scdn.co/image/ab67616d00001e0204481c826dd292e5e4983b3f',
-        'https://images.genius.com/7f53e3ec9752c0f901d9d1370b569507.1000x1000x1.jpg',
-      ]
-    }
-  ])
+  // Favorite albums modal
+  const [showFavoritesModal, setShowFavoritesModal] = useState(false)
+  const [favSearchQuery, setFavSearchQuery] = useState('')
+  const [favSearchResults, setFavSearchResults] = useState([])
+  const [favSearching, setFavSearching] = useState(false)
 
   useEffect(() => {
-    const fetchData = async () => {
-      // Get current user
+    fetchData()
+  }, [userId])
+
+  const fetchData = async () => {
+    try {
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUser(user)
 
-      // Determine which profile to load
       const profileId = userId || user?.id
 
       if (profileId) {
-        const { data, error } = await supabase
+        // Fetch profile
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', profileId)
           .single()
 
-        if (!error && data) {
-          setProfile(data)
-          setEditUsername(data.username || '')
-          setEditBio(data.bio || '')
+        if (profileData) {
+          setProfile(profileData)
+          setEditUsername(profileData.username || '')
+          setEditBio(profileData.bio || '')
         }
-      }
 
+        // Fetch user's reviews
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('user_id', profileId)
+          .order('created_at', { ascending: false })
+
+        console.log('Reviews from DB:', reviewsData)
+        console.log('Reviews error:', reviewsError)
+
+        if (reviewsData && reviewsData.length > 0) {
+          // Fetch album details from Spotify for each review
+          const reviewsWithAlbums = await Promise.all(
+            reviewsData.map(async (review) => {
+              try {
+                const album = await spotifyService.getAlbum(review.album_id)
+                console.log('Fetched album for review:', album?.name)
+                return { ...review, album }
+              } catch (e) {
+                console.error('Error fetching album:', review.album_id, e)
+                return { ...review, album: null }
+              }
+            })
+          )
+          setReviews(reviewsWithAlbums.filter(r => r.album))
+        } else {
+          setReviews([])
+        }
+
+        // Fetch user's listens (recently listened)
+        const { data: listensData } = await supabase
+          .from('listens')
+          .select('*')
+          .eq('user_id', profileId)
+          .order('listened_at', { ascending: false })
+          .limit(10)
+
+        if (listensData && listensData.length > 0) {
+          const listensWithAlbums = await Promise.all(
+            listensData.map(async (listen) => {
+              try {
+                const album = await spotifyService.getAlbum(listen.album_id)
+                return { ...listen, album }
+              } catch (e) {
+                return { ...listen, album: null }
+              }
+            })
+          )
+          setRecentlyListened(listensWithAlbums.filter(l => l.album))
+        }
+
+        // Fetch user's playlists
+        const { data: playlistsData } = await supabase
+          .from('playlists')
+          .select('*')
+          .eq('user_id', profileId)
+          .order('created_at', { ascending: false })
+
+        if (playlistsData) {
+          const playlistsWithSongs = await Promise.all(
+            playlistsData.map(async (playlist) => {
+              const { data: songs } = await supabase
+                .from('playlist_songs')
+                .select('album_cover')
+                .eq('playlist_id', playlist.id)
+                .order('position', { ascending: true })
+                .limit(4)
+              return { ...playlist, songs: songs || [] }
+            })
+          )
+          setPlaylists(playlistsWithSongs)
+        }
+
+        // Fetch favorite albums
+        const { data: favoritesData } = await supabase
+          .from('favorite_albums')
+          .select('*')
+          .eq('user_id', profileId)
+          .order('position', { ascending: true })
+
+        if (favoritesData && favoritesData.length > 0) {
+          const favoritesWithAlbums = await Promise.all(
+            favoritesData.map(async (fav) => {
+              try {
+                const album = await spotifyService.getAlbum(fav.album_id)
+                return { ...fav, album }
+              } catch (e) {
+                return { ...fav, album: null }
+              }
+            })
+          )
+          setFavoriteAlbums(favoritesWithAlbums.filter(f => f.album))
+        }
+
+        // Calculate stats
+        const listenCount = listensData?.length || 0
+        const playlistCount = playlistsData?.length || 0
+        const avgRating = reviewsData && reviewsData.length > 0
+          ? reviewsData.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsData.length
+          : 0
+
+        setStats({
+          albumsListened: listenCount,
+          averageRating: avgRating,
+          playlistCount: playlistCount
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error)
+    } finally {
       setLoading(false)
     }
-
-    fetchData()
-  }, [userId])
+  }
 
   const isOwnProfile = currentUser?.id === (userId || currentUser?.id)
 
@@ -109,7 +203,6 @@ function Profile() {
   const handleSaveProfile = async () => {
     let avatarUrl = profile?.avatar_url
 
-    // Upload avatar if changed
     if (avatarFile) {
       const fileExt = avatarFile.name.split('.').pop()
       const fileName = `${currentUser.id}.${fileExt}`
@@ -126,7 +219,6 @@ function Profile() {
       }
     }
 
-    // Update profile
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -146,6 +238,71 @@ function Profile() {
       setShowEditModal(false)
       setAvatarFile(null)
       setAvatarPreview(null)
+    }
+  }
+
+  // Favorite albums functions
+  const handleFavSearch = async () => {
+    if (!favSearchQuery.trim()) return
+    setFavSearching(true)
+    try {
+      const albums = await spotifyService.searchAlbums(favSearchQuery, 10)
+      setFavSearchResults(albums)
+    } catch (error) {
+      console.error('Search error:', error)
+    } finally {
+      setFavSearching(false)
+    }
+  }
+
+  const handleAddFavorite = async (album) => {
+    if (!currentUser) return
+    
+    // Check if already in favorites
+    const exists = favoriteAlbums.find(f => f.album_id === album.id)
+    if (exists) {
+      alert('This album is already in your favorites!')
+      return
+    }
+
+    if (favoriteAlbums.length >= 4) {
+      alert('You can only have 4 favorite albums. Remove one first.')
+      return
+    }
+
+    const { error } = await supabase
+      .from('favorite_albums')
+      .insert({
+        user_id: currentUser.id,
+        album_id: album.id,
+        album_name: album.name,
+        album_cover: album.images?.[0]?.url,
+        artist_name: album.artists?.map(a => a.name).join(', '),
+        position: favoriteAlbums.length + 1
+      })
+
+    if (!error) {
+      setFavoriteAlbums([...favoriteAlbums, { 
+        album_id: album.id, 
+        album: album 
+      }])
+      setShowFavoritesModal(false)
+      setFavSearchQuery('')
+      setFavSearchResults([])
+    }
+  }
+
+  const handleRemoveFavorite = async (albumId) => {
+    if (!currentUser) return
+
+    const { error } = await supabase
+      .from('favorite_albums')
+      .delete()
+      .eq('user_id', currentUser.id)
+      .eq('album_id', albumId)
+
+    if (!error) {
+      setFavoriteAlbums(favoriteAlbums.filter(f => f.album_id !== albumId))
     }
   }
 
@@ -187,28 +344,49 @@ function Profile() {
       {/* Action Buttons */}
       {isOwnProfile && (
         <div className="profile-actions">
-          <button className="action-btn">post review</button>
-          <button className="action-btn">make playlist</button>
+          <button className="action-btn" onClick={() => navigate('/albums')}>post review</button>
+          <button className="action-btn" onClick={() => navigate('/playlists')}>make playlist</button>
           <button className="action-btn" onClick={() => setShowEditModal(true)}>edit profile</button>
         </div>
       )}
 
       {/* Favorite Albums */}
       <div className="profile-section">
-        <h2 className="section-title">favorite albums</h2>
+        <div className="section-header">
+          <h2 className="section-title">favorite albums</h2>
+          {isOwnProfile && (
+            <button className="edit-section-btn" onClick={() => setShowFavoritesModal(true)}>
+              + add
+            </button>
+          )}
+        </div>
         <div className="section-line"></div>
         <div className="albums-grid-container">
           <div className="albums-grid">
-            {favoriteAlbums.map(album => (
-              <div key={album.id} className="album-card">
-                <img src={album.cover} alt={album.title} className="album-cover" />
-                <div className="album-stats">
-                  <span className="album-stat">🎧 {album.listens}</span>
-                  <span className="album-stat">✎ {album.reviews}</span>
+            {favoriteAlbums.length > 0 ? (
+              favoriteAlbums.map(fav => (
+                <div key={fav.album_id} className="album-card" onClick={() => navigate(`/album/${fav.album_id}`)}>
+                  <div className="album-cover-wrapper">
+                    <img src={fav.album?.images?.[0]?.url || fav.album_cover} alt={fav.album?.name} className="album-cover" />
+                    {isOwnProfile && (
+                      <button 
+                        className="remove-fav-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveFavorite(fav.album_id)
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <p className="album-title">{fav.album?.name}</p>
+                  <p className="album-artist">{fav.album?.artists?.map(a => a.name).join(', ')}</p>
                 </div>
-                <div className="album-rating">{renderStars(album.rating)}</div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="empty-text">No favorite albums yet</p>
+            )}
           </div>
         </div>
       </div>
@@ -219,18 +397,41 @@ function Profile() {
         <div className="section-line"></div>
         <div className="albums-grid-container">
           <div className="albums-grid">
-            {recentlyListened.map(album => (
-              <div key={album.id} className="album-card">
-                <img src={album.cover} alt={album.title} className="album-cover" />
-                <div className="album-stats">
-                  <span className="album-stat">🎧 {album.listens}</span>
-                  <span className="album-stat">✎ {album.reviews}</span>
+            {recentlyListened.length > 0 ? (
+              recentlyListened.map(listen => (
+                <div key={listen.id} className="album-card" onClick={() => navigate(`/album/${listen.album_id}`)}>
+                  <img src={listen.album?.images?.[0]?.url} alt={listen.album?.name} className="album-cover" />
+                  <p className="album-title">{listen.album?.name}</p>
+                  <p className="album-artist">{listen.album?.artists?.map(a => a.name).join(', ')}</p>
                 </div>
-                <div className="album-rating">{renderStars(album.rating)}</div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="empty-text">No listens yet</p>
+            )}
           </div>
-          <button className="carousel-next-btn">›</button>
+        </div>
+      </div>
+
+      {/* Reviews */}
+      <div className="profile-section">
+        <h2 className="section-title">reviews</h2>
+        <div className="section-line"></div>
+        <div className="reviews-grid">
+          {reviews.length > 0 ? (
+            reviews.map(review => (
+              <div key={review.id} className="review-card" onClick={() => navigate(`/album/${review.album_id}`)}>
+                <img src={review.album?.images?.[0]?.url} alt={review.album?.name} className="review-album-cover" />
+                <div className="review-info">
+                  <h3 className="review-album-name">{review.album?.name}</h3>
+                  <p className="review-album-artist">{review.album?.artists?.map(a => a.name).join(', ')}</p>
+                  <div className="review-rating">{renderStars(review.rating)}</div>
+                  {review.review_text && <p className="review-text">{review.review_text}</p>}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="empty-text">No reviews yet</p>
+          )}
         </div>
       </div>
 
@@ -238,22 +439,26 @@ function Profile() {
       <div className="profile-section">
         <h2 className="section-title">playlists</h2>
         <div className="section-line"></div>
-        {playlists.map(playlist => (
-          <div key={playlist.id} className="playlist-item">
-            <div className="playlist-header">
-              <span className="playlist-name">{playlist.name}</span>
-              <span className="playlist-description">{playlist.description}</span>
+        {playlists.length > 0 ? (
+          playlists.map(playlist => (
+            <div key={playlist.id} className="playlist-item" onClick={() => navigate(`/playlist/${playlist.id}`)}>
+              <div className="playlist-header">
+                <span className="playlist-name">{playlist.title}</span>
+                <span className="playlist-description">{playlist.description}</span>
+              </div>
+              <div className="playlist-albums">
+                {playlist.songs?.slice(0, 4).map((song, index) => (
+                  <img key={index} src={song.album_cover} alt="Album" className="playlist-album-cover" />
+                ))}
+                {playlist.songs?.length === 0 && (
+                  <p className="empty-text">No songs yet</p>
+                )}
+              </div>
             </div>
-            <div className="playlist-albums">
-              {playlist.albums.map((cover, index) => (
-                <img key={index} src={cover} alt="Album" className="playlist-album-cover" />
-              ))}
-              {isOwnProfile && (
-                <button className="add-playlist-btn">+</button>
-              )}
-            </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="empty-text">No playlists yet</p>
+        )}
       </div>
 
       {/* Edit Profile Modal */}
@@ -300,6 +505,51 @@ function Profile() {
               </button>
               <button className="modal-btn save" onClick={handleSaveProfile}>
                 save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Favorite Album Modal */}
+      {showFavoritesModal && (
+        <div className="modal-overlay" onClick={() => setShowFavoritesModal(false)}>
+          <div className="modal-content fav-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">add favorite album</h2>
+            
+            <div className="fav-search-bar">
+              <input
+                type="text"
+                placeholder="search for an album..."
+                className="modal-input"
+                value={favSearchQuery}
+                onChange={(e) => setFavSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleFavSearch()}
+              />
+              <button className="search-btn" onClick={handleFavSearch} disabled={favSearching}>
+                {favSearching ? '...' : 'search'}
+              </button>
+            </div>
+
+            <div className="fav-search-results">
+              {favSearchResults.map(album => (
+                <div 
+                  key={album.id} 
+                  className="fav-search-item"
+                  onClick={() => handleAddFavorite(album)}
+                >
+                  <img src={album.images?.[0]?.url} alt={album.name} className="fav-search-cover" />
+                  <div className="fav-search-info">
+                    <p className="fav-search-name">{album.name}</p>
+                    <p className="fav-search-artist">{album.artists?.map(a => a.name).join(', ')}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="modal-buttons">
+              <button className="modal-btn cancel" onClick={() => setShowFavoritesModal(false)}>
+                close
               </button>
             </div>
           </div>

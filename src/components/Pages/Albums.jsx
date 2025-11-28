@@ -125,7 +125,7 @@ function Albums() {
   if (loading) {
     return (
       <div className="albums-page">
-        <p className="loading-text">Loading albums...</p>
+        <p className="loading-text">loading albums...</p>
       </div>
     )
   }

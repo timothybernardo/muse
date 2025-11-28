@@ -1,6 +1,8 @@
 // Spotify API Service
-const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID
-const CLIENT_SECRET = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET
+// Add your credentials here or use environment variables
+const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || 'your_client_id'
+const CLIENT_SECRET = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET || 'your_client_secret'
+
 let accessToken = null
 let tokenExpiry = null
 
@@ -65,6 +67,12 @@ export const spotifyService = {
   searchAlbums: async (query, limit = 20) => {
     const data = await spotifyFetch(`/search?q=${encodeURIComponent(query)}&type=album&limit=${limit}`)
     return data.albums?.items || []
+  },
+
+  // Search for tracks
+  searchTracks: async (query, limit = 20) => {
+    const data = await spotifyFetch(`/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`)
+    return data.tracks?.items || []
   },
 
   // Get album details
