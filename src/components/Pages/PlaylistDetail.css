@@ -553,3 +553,113 @@
 .delete-confirm-btn.delete:hover {
   background-color: #ff5252;
 }
+
+/* Add these styles to your PlaylistDetail.css */
+
+/* Clickable album name */
+.album-name.clickable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.album-name.clickable:hover {
+  color: #d4a574;
+  text-decoration: underline;
+}
+
+/* Edit button next to title */
+.edit-playlist-btn {
+  background: none;
+  border: 1px solid #8a7a6a;
+  color: #8a7a6a;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  margin-left: 15px;
+  transition: all 0.2s;
+}
+
+.edit-playlist-btn:hover {
+  border-color: #d4a574;
+  color: #d4a574;
+}
+
+/* Edit Playlist Modal */
+.edit-playlist-modal {
+  background-color: #7b4739;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 450px;
+}
+
+.edit-modal-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.edit-modal-input {
+  width: 100%;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  border-radius: 25px;
+  border: none;
+  background-color: #4a3028;
+  color: #f5f5f5;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.edit-modal-input::placeholder {
+  color: #c4b8a8;
+}
+
+.edit-modal-textarea {
+  width: 100%;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  border-radius: 15px;
+  border: none;
+  background-color: #4a3028;
+  color: #f5f5f5;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.edit-modal-textarea::placeholder {
+  color: #c4b8a8;
+}
+
+.edit-modal-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.edit-modal-btn {
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.edit-modal-btn.save {
+  background-color: #d4c4a8;
+  color: #2b1a00;
+  border: none;
+}
+
+.edit-modal-btn.cancel {
+  background-color: transparent;
+  color: #f5f5f5;
+  border: 1px solid #f5f5f5;
+}

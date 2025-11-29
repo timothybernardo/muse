@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import './Playlists.css'
 
@@ -23,7 +23,6 @@ function Playlists() {
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUser(user)
 
-      // Fetch playlists only
       const { data: allPlaylists, error } = await supabase
         .from('playlists')
         .select('*')
@@ -35,10 +34,8 @@ function Playlists() {
       }
 
       if (allPlaylists) {
-        // Fetch songs and profiles for each playlist separately
         const playlistsWithData = await Promise.all(
           allPlaylists.map(async (playlist) => {
-            // Fetch songs
             const { data: songs } = await supabase
               .from('playlist_songs')
               .select('album_id, track_name, album_cover, artist_name, album_name')
@@ -46,7 +43,6 @@ function Playlists() {
               .order('position', { ascending: true })
               .limit(4)
             
-            // Fetch profile
             const { data: profile } = await supabase
               .from('profiles')
               .select('username, avatar_url')
@@ -61,24 +57,20 @@ function Playlists() {
           })
         )
 
-        // Get user's playlist count for each user
         const playlistCounts = {}
         playlistsWithData.forEach(p => {
           playlistCounts[p.user_id] = (playlistCounts[p.user_id] || 0) + 1
         })
 
-        // Add playlist count to each playlist
         const playlistsWithCounts = playlistsWithData.map(p => ({
           ...p,
           userPlaylistCount: playlistCounts[p.user_id]
         }))
 
-        // Separate user's playlists and others
         if (user) {
           setUserPlaylists(playlistsWithCounts.filter(p => p.user_id === user.id))
         }
 
-        // Use all playlists for favorites and recent
         setFavoritePlaylists(playlistsWithCounts.slice(0, 5))
         setRecentPlaylists(playlistsWithCounts.slice(0, 5))
       }
@@ -90,12 +82,7 @@ function Playlists() {
   }
 
   const handleCreatePlaylist = async () => {
-    if (!newPlaylistName.trim() || !currentUser) {
-      console.log('Missing name or user:', { name: newPlaylistName, user: currentUser })
-      return
-    }
-
-    console.log('Creating playlist:', newPlaylistName)
+    if (!newPlaylistName.trim() || !currentUser) return
 
     const { data, error } = await supabase
       .from('playlists')
@@ -106,8 +93,6 @@ function Playlists() {
       })
       .select()
       .single()
-
-    console.log('Create result:', { data, error })
 
     if (error) {
       console.error('Error creating playlist:', error)
@@ -124,13 +109,27 @@ function Playlists() {
     }
   }
 
+  // Handle clicking on the playlist card
+  const handlePlaylistClick = (playlistId) => {
+    navigate(`/playlist/${playlistId}`)
+  }
+
+  // Handle clicking on user profile (stop propagation to prevent card click)
+  const handleUserClick = (e, userId) => {
+    e.stopPropagation()
+    navigate(`/profile/${userId}`)
+  }
+
   const PlaylistCard = ({ playlist }) => (
-    <div className="playlist-card">
+    <div 
+      className="playlist-card"
+      onClick={() => handlePlaylistClick(playlist.id)}
+    >
       <div className="playlist-header">
-        <Link to={`/playlist/${playlist.id}`} className="playlist-name">
-          {playlist.title}
-        </Link>
-        <span className="playlist-description">{playlist.description}</span>
+        <span className="playlist-name">{playlist.title}</span>
+        {playlist.description && (
+          <span className="playlist-description">{playlist.description}</span>
+        )}
       </div>
       <div className="playlist-content">
         <div className="playlist-albums">
@@ -140,14 +139,16 @@ function Playlists() {
               src={song.album_cover}
               alt={song.track_name}
               className="playlist-album-cover"
-              onClick={() => navigate(`/album/${song.album_id}`)}
             />
           ))}
           {(!playlist.playlist_songs || playlist.playlist_songs.length === 0) && (
             <div className="empty-state" style={{ padding: '20px' }}>No songs yet</div>
           )}
         </div>
-        <Link to={`/profile/${playlist.user_id}`} className="playlist-user">
+        <div 
+          className="playlist-user"
+          onClick={(e) => handleUserClick(e, playlist.user_id)}
+        >
           {playlist.profiles?.avatar_url ? (
             <img src={playlist.profiles.avatar_url} alt="" className="playlist-user-avatar" />
           ) : (
@@ -155,7 +156,7 @@ function Playlists() {
           )}
           <span className="playlist-user-name">{playlist.profiles?.username || 'User'}</span>
           <span className="playlist-user-count">{playlist.userPlaylistCount} playlists</span>
-        </Link>
+        </div>
       </div>
     </div>
   )
@@ -171,7 +172,6 @@ function Playlists() {
           + create new playlist
         </button>
 
-        {/* User's Playlists */}
         {userPlaylists.length > 0 && (
           <div className="playlists-section">
             <h2 className="section-title">your playlists</h2>
@@ -182,7 +182,6 @@ function Playlists() {
           </div>
         )}
 
-        {/* User Favorite Playlists */}
         <div className="playlists-section">
           <h2 className="section-title">user-favorite playlists</h2>
           <div className="section-line"></div>
@@ -195,7 +194,6 @@ function Playlists() {
           )}
         </div>
 
-        {/* Recently Made Playlists */}
         <div className="playlists-section">
           <h2 className="section-title">recently-made playlists</h2>
           <div className="section-line"></div>
@@ -209,7 +207,6 @@ function Playlists() {
         </div>
       </div>
 
-      {/* Create Playlist Modal */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>

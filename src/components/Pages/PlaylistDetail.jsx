@@ -31,6 +31,11 @@ function PlaylistDetail() {
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  // Edit playlist modal
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+
   useEffect(() => {
     fetchPlaylist()
   }, [id])
@@ -52,6 +57,8 @@ function PlaylistDetail() {
       }
 
       setPlaylist(playlistData)
+      setEditTitle(playlistData.title || '')
+      setEditDescription(playlistData.description || '')
 
       const { data: creatorData } = await supabase
         .from('profiles')
@@ -76,6 +83,30 @@ function PlaylistDetail() {
     }
   }
 
+  // Update playlist title/description
+  const handleUpdatePlaylist = async () => {
+    if (!editTitle.trim()) {
+      alert('Playlist name cannot be empty')
+      return
+    }
+
+    const { error } = await supabase
+      .from('playlists')
+      .update({ 
+        title: editTitle, 
+        description: editDescription 
+      })
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error updating playlist:', error)
+      alert('Error updating playlist: ' + error.message)
+    } else {
+      setPlaylist({ ...playlist, title: editTitle, description: editDescription })
+      setShowEditModal(false)
+    }
+  }
+
   // Remove song from playlist
   const handleRemoveSong = async (song, index) => {
     if (!confirm(`Remove "${song.track_name}" from this playlist?`)) return
@@ -96,7 +127,6 @@ function PlaylistDetail() {
 
   // Delete entire playlist
   const handleDeletePlaylist = async () => {
-    // First delete all songs in the playlist
     const { error: songsError } = await supabase
       .from('playlist_songs')
       .delete()
@@ -108,7 +138,6 @@ function PlaylistDetail() {
       return
     }
 
-    // Then delete the playlist itself
     const { error: playlistError } = await supabase
       .from('playlists')
       .delete()
@@ -228,6 +257,12 @@ function PlaylistDetail() {
     return covers
   }
 
+  // Navigate to album page
+  const handleAlbumClick = (e, albumId) => {
+    e.stopPropagation()
+    navigate(`/album/${albumId}`)
+  }
+
   if (loading) {
     return <div className="playlist-detail-page"><p className="loading-text">Loading playlist...</p></div>
   }
@@ -258,10 +293,17 @@ function PlaylistDetail() {
             <h1 className="playlist-title">
               {playlist.title}
               <span className="playlist-song-count">{songs.length} songs</span>
+              {isOwner && (
+                <button 
+                  className="edit-playlist-btn"
+                  onClick={() => setShowEditModal(true)}
+                >
+                  edit
+                </button>
+              )}
             </h1>
             <p className="playlist-description">{playlist.description}</p>
             
-            {/* Delete Playlist Button */}
             {isOwner && (
               <button 
                 className="delete-playlist-btn"
@@ -298,13 +340,18 @@ function PlaylistDetail() {
               <div className="song-info">
                 <h3 className="song-title">{song.track_name}</h3>
                 <p className="song-artist">
-                  {song.artist_name} on <span className="album-name">{song.album_name}</span>
+                  {song.artist_name} on{' '}
+                  <span 
+                    className="album-name clickable"
+                    onClick={(e) => handleAlbumClick(e, song.album_id)}
+                  >
+                    {song.album_name}
+                  </span>
                 </p>
                 {song.note && <p className="song-note">{song.note}</p>}
               </div>
               <div className="song-position">{index + 1}</div>
               
-              {/* Remove Song Button */}
               {isOwner && (
                 <button 
                   className="remove-song-btn"
@@ -347,6 +394,42 @@ function PlaylistDetail() {
                 onClick={handleDeletePlaylist}
               >
                 delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Playlist Modal */}
+      {showEditModal && (
+        <div className="lyrics-modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="edit-playlist-modal" onClick={e => e.stopPropagation()}>
+            <h2 className="edit-modal-title">edit playlist</h2>
+            <input
+              type="text"
+              placeholder="playlist name"
+              className="edit-modal-input"
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+            />
+            <textarea
+              placeholder="description (optional)"
+              className="edit-modal-textarea"
+              value={editDescription}
+              onChange={e => setEditDescription(e.target.value)}
+            />
+            <div className="edit-modal-buttons">
+              <button 
+                className="edit-modal-btn cancel" 
+                onClick={() => setShowEditModal(false)}
+              >
+                cancel
+              </button>
+              <button 
+                className="edit-modal-btn save" 
+                onClick={handleUpdatePlaylist}
+              >
+                save
               </button>
             </div>
           </div>
