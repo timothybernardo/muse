@@ -576,3 +576,239 @@
 .playlist-item:hover {
   background-color: #3d2814;
 }
+
+/* Follow button */
+.action-btn.following {
+  background-color: #7b4739;
+  color: #f5f5f5;
+  border-color: #7b4739;
+}
+
+/* Review meta (stars + date) */
+.review-meta {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 8px;
+}
+
+.review-date {
+  font-size: 12px;
+  color: #8a7a6a;
+}
+
+.review-text-preview {
+  font-size: 14px;
+  color: #c4b8a8;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.edit-review-btn {
+  background: none;
+  border: 1px solid #8a7a6a;
+  color: #8a7a6a;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 10px;
+}
+
+.edit-review-btn:hover {
+  border-color: #c4b8a8;
+  color: #c4b8a8;
+}
+
+/* Edit review modal extras */
+.editing-album-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #4a3028;
+  border-radius: 10px;
+}
+
+.editing-album-cover {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.editing-album-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 4px;
+}
+
+.editing-album-artist {
+  font-size: 14px;
+  color: #c4b8a8;
+}
+
+.modal-rating {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.modal-star {
+  font-size: 36px;
+  color: #5a4a3f;
+  cursor: pointer;
+}
+
+.modal-star.active {
+  color: #d4a574;
+}
+
+.modal-btn.delete {
+  background-color: transparent;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+}
+
+.modal-btn.delete:hover {
+  background-color: #ff6b6b;
+  color: #fff;
+}
+
+.profile-follow-stats {
+  display: flex;
+  gap: 15px;
+  font-size: 13px;
+  color: #8a7a6a;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.profile-follow-stats span {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.profile-follow-stats strong {
+  color: #f5f5f5;
+  font-weight: 600;
+}
+
+/* Profile Reviews - Similar to Album Detail */
+.reviews-list {
+  width: 100%;
+  max-width: 1200px;
+}
+
+.profile-review-card {
+  display: flex;
+  gap: 20px;
+  background-color: #7b4739;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+
+.profile-review-cover {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.profile-review-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.profile-review-info {
+  cursor: pointer;
+}
+
+.profile-review-album {
+  font-size: 16px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 4px;
+}
+
+.profile-review-artist {
+  font-size: 14px;
+  color: #c4b8a8;
+  margin-bottom: 4px;
+}
+
+.profile-review-date {
+  font-size: 12px;
+  color: #8a7a6a;
+}
+
+.profile-review-stars {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.profile-review-text {
+  font-size: 14px;
+  color: #e8dcc8;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.edit-review-btn {
+  background: none;
+  border: 1px solid #8a7a6a;
+  color: #8a7a6a;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.edit-review-btn:hover {
+  border-color: #c4b8a8;
+  color: #c4b8a8;
+}
+
+.profile-review-card {
+  background-color: #3d2814 !important;
+}
+
+.profile-review-card:hover {
+  background-color: #4a3020 !important;
+}
+
+/* Follow stats under bio */
+.profile-follow-stats {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.follow-stat {
+  font-size: 14px;
+  color: #c4b8a8;
+}
+
+.follow-stat strong {
+  color: #f5f5f5;
+  font-weight: bold;
+}
