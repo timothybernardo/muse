@@ -585,6 +585,7 @@
 .modal-textarea {
   width: 100%;
   padding: 15px 20px;
+  padding-bottom: 25px;
   border-radius: 15px;
   border: none;
   background-color: #4a3028;
@@ -593,12 +594,25 @@
   font-family: inherit;
   resize: vertical;
   min-height: 150px;
-  margin-bottom: 20px;
   box-sizing: border-box;
 }
 
 .modal-textarea::placeholder {
   color: #c4b8a8;
+}
+
+/* Input wrapper for character count */
+.input-wrapper {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.char-count {
+  position: absolute;
+  bottom: 8px;
+  right: 15px;
+  font-size: 11px;
+  color: #a89a8a;
 }
 
 .modal-buttons {
@@ -632,4 +646,28 @@
   color: #c4b8a8;
   text-align: center;
   padding: 40px;
+}
+
+.input-wrapper {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.input-wrapper .modal-input {
+  margin-bottom: 0;
+  padding-right: 50px;
+}
+
+.input-wrapper .modal-textarea {
+  margin-bottom: 0;
+  resize: none;
+}
+
+.char-count {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  font-size: 11px;
+  color: #a89a8a;
+  pointer-events: none;
 }

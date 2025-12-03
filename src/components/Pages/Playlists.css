@@ -45,24 +45,33 @@
 /* Header with name and description */
 .playlist-header {
   display: flex;
-  align-items: center;
-  gap: 20px;
+  align-items: baseline;
+  gap: 15px;
   margin-bottom: 10px;
-  border: none !important;
-  border-bottom: none !important;
-  padding-bottom: 0 !important;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .playlist-name {
   font-size: 18px;
   font-weight: bold;
   color: #f5f5f5;
+  flex-shrink: 0;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .playlist-description {
   font-size: 14px;
   font-style: italic;
   color: #c4b8a8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Content row - albums left, user far right */
@@ -109,6 +118,11 @@
   font-weight: bold;
   color: #f5f5f5;
   margin-bottom: 2px;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 
 .playlist-user-count {
@@ -166,16 +180,31 @@
   text-align: center;
 }
 
+/* Input wrapper for character count */
+.input-wrapper {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.char-count {
+  position: absolute;
+  bottom: 8px;
+  right: 15px;
+  font-size: 11px;
+  color: #a89a8a;
+}
+
 .modal-input {
   width: 100%;
   padding: 15px 20px;
-  margin-bottom: 15px;
+  padding-right: 60px;
   border-radius: 25px;
   border: none;
   background-color: #4a3028;
   color: #f5f5f5;
   font-size: 14px;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .modal-input::placeholder {
@@ -185,7 +214,7 @@
 .modal-textarea {
   width: 100%;
   padding: 15px 20px;
-  margin-bottom: 15px;
+  padding-bottom: 25px;
   border-radius: 15px;
   border: none;
   background-color: #4a3028;
@@ -194,6 +223,7 @@
   font-family: inherit;
   resize: vertical;
   min-height: 80px;
+  box-sizing: border-box;
 }
 
 .modal-textarea::placeholder {
@@ -240,4 +270,28 @@
   text-align: center;
   padding: 40px;
   font-style: italic;
+}
+
+.input-wrapper {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.input-wrapper .modal-input {
+  margin-bottom: 0;
+  padding-right: 50px;
+}
+
+.input-wrapper .modal-textarea {
+  margin-bottom: 0;
+  resize: none;
+}
+
+.char-count {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  font-size: 11px;
+  color: #a89a8a;
+  pointer-events: none;
 }

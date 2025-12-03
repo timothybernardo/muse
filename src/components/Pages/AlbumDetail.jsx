@@ -5,6 +5,11 @@ import { spotifyService } from '../../services/spotify'
 import { geniusService } from '../../services/genius'
 import './AlbumDetail.css'
 
+// Character limits
+const LIMITS = {
+  review: 500
+}
+
 function AlbumDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -692,12 +697,16 @@ function AlbumDetail() {
                   onClick={() => setModalRating(star)}>★</span>
               ))}
             </div>
-            <textarea
-              className="modal-textarea"
-              placeholder="Write your review here..."
-              value={reviewText}
-              onChange={e => setReviewText(e.target.value)}
-            />
+            <div className="input-wrapper">
+              <textarea
+                className="modal-textarea"
+                placeholder="Write your review here..."
+                value={reviewText}
+                onChange={e => setReviewText(e.target.value.slice(0, LIMITS.review))}
+                maxLength={LIMITS.review}
+              />
+              <span className="char-count">{reviewText.length}/{LIMITS.review}</span>
+            </div>
             <div className="modal-buttons">
               <button className="modal-btn cancel" onClick={() => setShowReviewModal(false)}>cancel</button>
               <button className="modal-btn save" onClick={handleSubmitReview}>submit</button>

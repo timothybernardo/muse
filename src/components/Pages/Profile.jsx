@@ -5,6 +5,13 @@ import { spotifyService } from '../../services/spotify'
 import './Profile.css'
 import FollowsModal from './FollowsModal'
 
+// Character limits
+const LIMITS = {
+  username: 20,
+  bio: 150,
+  review: 500
+}
+
 function Profile() {
   const { userId } = useParams()
   const navigate = useNavigate()
@@ -386,8 +393,27 @@ function Profile() {
               <button className="avatar-upload-btn" onClick={() => fileInputRef.current?.click()}>change photo</button>
               <input type="file" ref={fileInputRef} className="hidden-input" accept="image/*" onChange={handleAvatarChange} />
             </div>
-            <input type="text" placeholder="username" className="modal-input" value={editUsername} onChange={(e) => setEditUsername(e.target.value)} />
-            <textarea placeholder="bio" className="modal-textarea" value={editBio} onChange={(e) => setEditBio(e.target.value)} />
+            <div className="input-wrapper">
+              <input 
+                type="text" 
+                placeholder="username" 
+                className="modal-input" 
+                value={editUsername} 
+                onChange={(e) => setEditUsername(e.target.value.slice(0, LIMITS.username))}
+                maxLength={LIMITS.username}
+              />
+              <span className="char-count">{editUsername.length}/{LIMITS.username}</span>
+            </div>
+            <div className="input-wrapper">
+              <textarea 
+                placeholder="bio" 
+                className="modal-textarea" 
+                value={editBio} 
+                onChange={(e) => setEditBio(e.target.value.slice(0, LIMITS.bio))}
+                maxLength={LIMITS.bio}
+              />
+              <span className="char-count">{editBio.length}/{LIMITS.bio}</span>
+            </div>
             <div className="modal-buttons">
               <button className="modal-btn cancel" onClick={() => setShowEditModal(false)}>cancel</button>
               <button className="modal-btn save" onClick={handleSaveProfile}>save</button>
@@ -436,7 +462,16 @@ function Profile() {
             <div className="modal-rating">
               {[1, 2, 3, 4, 5].map(star => <span key={star} className={`modal-star ${star <= modalRating ? 'active' : ''}`} onClick={() => setModalRating(star)}>★</span>)}
             </div>
-            <textarea placeholder="Write your review here..." className="modal-textarea" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
+            <div className="input-wrapper">
+              <textarea 
+                placeholder="Write your review here..." 
+                className="modal-textarea" 
+                value={reviewText} 
+                onChange={(e) => setReviewText(e.target.value.slice(0, LIMITS.review))}
+                maxLength={LIMITS.review}
+              />
+              <span className="char-count">{reviewText.length}/{LIMITS.review}</span>
+            </div>
             <div className="modal-buttons">
               <button className="modal-btn delete" onClick={handleDeleteReview}>delete</button>
               <button className="modal-btn cancel" onClick={() => setShowReviewModal(false)}>cancel</button>

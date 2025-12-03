@@ -112,6 +112,18 @@ function Navbar({ user }) {
     setUnreadCount(0)
   }
 
+  const clearAllNotifications = async () => {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (!error) {
+      setNotifications([])
+      setUnreadCount(0)
+    }
+  }
+
   const getNotifText = (notif) => {
     const name = notif.fromProfile?.username || 'Someone'
     switch (notif.type) {
@@ -168,11 +180,18 @@ function Navbar({ user }) {
             <div className="notif-dropdown">
               <div className="notif-header">
                 <span>notifications</span>
-                {unreadCount > 0 && (
-                  <button className="mark-read-btn" onClick={markAllRead}>
-                    mark all read
-                  </button>
-                )}
+                <div className="notif-header-actions">
+                  {unreadCount > 0 && (
+                    <button className="mark-read-btn" onClick={markAllRead}>
+                      mark all read
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button className="clear-all-btn" onClick={clearAllNotifications}>
+                      clear all
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="notif-list">

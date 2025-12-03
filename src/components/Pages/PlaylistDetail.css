@@ -38,6 +38,7 @@
 
 .playlist-info {
   flex: 1;
+  min-width: 0;
 }
 
 .playlist-title {
@@ -45,18 +46,28 @@
   font-weight: bold;
   color: #f5f5f5;
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .playlist-song-count {
   font-size: 16px;
   color: #c4b8a8;
-  margin-left: 15px;
   font-weight: normal;
 }
 
-.playlist-description {
+.playlist-detail-page .playlist-description {
   font-size: 14px;
   color: #c4b8a8;
+  max-width: 400px;
+  line-height: 1.5;
+  word-break: break-all;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  margin-bottom: 5px;
 }
 
 .playlist-creator {
@@ -65,6 +76,7 @@
   gap: 15px;
   text-decoration: none;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .creator-avatar {
@@ -114,6 +126,7 @@
 
 .song-info {
   flex: 1;
+  min-width: 0;
 }
 
 .song-title {
@@ -121,6 +134,9 @@
   font-weight: bold;
   color: #f5f5f5;
   margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .song-artist {
@@ -138,6 +154,10 @@
   font-size: 13px;
   color: #a09080;
   font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .song-position {
@@ -146,6 +166,18 @@
   color: #5a4a3f;
   width: 50px;
   text-align: center;
+  flex-shrink: 0;
+}
+
+/* Clickable album name */
+.album-name.clickable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.album-name.clickable:hover {
+  color: #d4a574;
+  text-decoration: underline;
 }
 
 /* Add Song Button */
@@ -165,7 +197,143 @@
   background-color: #8b5749;
 }
 
-/* Lyrics Modal */
+/* Song Actions */
+.song-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.song-item:hover .song-actions {
+  opacity: 1;
+}
+
+.move-song-btn {
+  background: none;
+  border: 1px solid #5a4a3f;
+  color: #c4b8a8;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.move-song-btn:hover:not(:disabled) {
+  border-color: #d4a574;
+  color: #d4a574;
+}
+
+.move-song-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.edit-note-btn {
+  background: none;
+  border: 1px solid #5a4a3f;
+  color: #c4b8a8;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.edit-note-btn:hover {
+  border-color: #d4a574;
+  color: #d4a574;
+}
+
+/* Remove Song Button */
+.remove-song-btn {
+  background: none;
+  border: 1px solid #5a4a3f;
+  color: #c4b8a8;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.remove-song-btn:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+/* Editing Song Info in Modal */
+.editing-song-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #4a3028;
+  border-radius: 12px;
+}
+
+.editing-song-cover {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.editing-song-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin: 0 0 4px 0;
+}
+
+.editing-song-artist {
+  font-size: 13px;
+  color: #c4b8a8;
+  margin: 0;
+}
+
+/* Edit button next to title */
+.edit-playlist-btn {
+  background: none;
+  border: 1px solid #8a7a6a;
+  color: #8a7a6a;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.edit-playlist-btn:hover {
+  border-color: #d4a574;
+  color: #d4a574;
+}
+
+/* Delete Playlist Button */
+.delete-playlist-btn {
+  background: none;
+  border: 1px solid #ff6b6b;
+  color: #ff6b6b;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.delete-playlist-btn:hover {
+  background-color: #ff6b6b;
+  color: #2b1a00;
+}
+
+/* Modal Overlay */
 .lyrics-modal-overlay {
   position: fixed;
   top: 0;
@@ -179,6 +347,165 @@
   z-index: 1000;
 }
 
+/* Input wrapper for character count */
+.input-wrapper {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.input-wrapper .edit-modal-input,
+.input-wrapper .edit-modal-textarea,
+.input-wrapper .note-input {
+  margin-bottom: 0;
+  padding-right: 50px;
+}
+
+.input-wrapper .edit-modal-textarea,
+.input-wrapper .note-input {
+  resize: none;
+}
+
+.char-count {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  font-size: 11px;
+  color: #a89a8a;
+  pointer-events: none;
+}
+
+/* Edit Playlist Modal */
+.edit-playlist-modal {
+  background-color: #7b4739;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 450px;
+}
+
+.edit-modal-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.edit-modal-input {
+  width: 100%;
+  padding: 15px 20px;
+  border-radius: 25px;
+  border: none;
+  background-color: #4a3028;
+  color: #f5f5f5;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.edit-modal-input::placeholder {
+  color: #c4b8a8;
+}
+
+.edit-modal-textarea {
+  width: 100%;
+  padding: 15px 20px;
+  padding-bottom: 25px;
+  border-radius: 15px;
+  border: none;
+  background-color: #4a3028;
+  color: #f5f5f5;
+  font-size: 14px;
+  font-family: inherit;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+
+.edit-modal-textarea::placeholder {
+  color: #c4b8a8;
+}
+
+.edit-modal-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.edit-modal-btn {
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.edit-modal-btn.save {
+  background-color: #d4c4a8;
+  color: #2b1a00;
+  border: none;
+}
+
+.edit-modal-btn.cancel {
+  background-color: transparent;
+  color: #f5f5f5;
+  border: 1px solid #f5f5f5;
+}
+
+/* Delete Confirmation Modal */
+.delete-confirm-modal {
+  background-color: #7b4739;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.delete-confirm-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 15px;
+}
+
+.delete-confirm-text {
+  color: #c4b8a8;
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+
+.delete-confirm-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.delete-confirm-btn {
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.delete-confirm-btn.cancel {
+  background-color: transparent;
+  color: #f5f5f5;
+  border: 1px solid #f5f5f5;
+}
+
+.delete-confirm-btn.delete {
+  background-color: #ff6b6b;
+  color: #fff;
+  border: none;
+}
+
+.delete-confirm-btn.delete:hover {
+  background-color: #ff5252;
+}
+
+/* Lyrics Modal */
 .lyrics-modal {
   background-color: #7b4739;
   border-radius: 20px;
@@ -225,7 +552,6 @@
   white-space: pre-wrap;
 }
 
-/* Custom scrollbar for lyrics */
 .lyrics-modal-content::-webkit-scrollbar {
   width: 8px;
 }
@@ -240,22 +566,10 @@
   border-radius: 4px;
 }
 
-.lyrics-modal-content::-webkit-scrollbar-thumb:hover {
-  background: #e8dcc8;
-}
-
 .lyrics-loading {
   color: #c4b8a8;
   text-align: center;
   padding: 40px;
-}
-
-/* Empty State */
-.empty-state {
-  color: #c4b8a8;
-  text-align: center;
-  padding: 60px;
-  font-style: italic;
 }
 
 /* Add Song Modal */
@@ -365,6 +679,7 @@
 
 .search-result-info {
   flex: 1;
+  min-width: 0;
 }
 
 .search-result-title {
@@ -372,6 +687,9 @@
   font-weight: bold;
   color: #f5f5f5;
   margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .search-result-artist {
@@ -387,14 +705,14 @@
 .note-input {
   width: 100%;
   padding: 12px 20px;
+  padding-bottom: 25px;
   border-radius: 15px;
   border: none;
   background-color: #4a3028;
   color: #f5f5f5;
   font-size: 14px;
   font-family: inherit;
-  margin-bottom: 20px;
-  resize: none;
+  box-sizing: border-box;
 }
 
 .note-input::placeholder {
@@ -439,7 +757,6 @@
   font-style: italic;
 }
 
-/* Custom scrollbar for search results */
 .search-results::-webkit-scrollbar {
   width: 8px;
 }
@@ -454,212 +771,17 @@
   border-radius: 4px;
 }
 
+/* Empty State */
+.empty-state {
+  color: #c4b8a8;
+  text-align: center;
+  padding: 60px;
+  font-style: italic;
+}
+
 /* Loading */
 .loading-text {
   color: #c4b8a8;
   text-align: center;
   padding: 40px;
-}
-
-/* Remove Song Button */
-.remove-song-btn {
-  background: none;
-  border: none;
-  color: #c4b8a8;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 5px 10px;
-  margin-left: 10px;
-  opacity: 0;
-  transition: opacity 0.2s, color 0.2s;
-}
-
-.song-item:hover .remove-song-btn {
-  opacity: 1;
-}
-
-.remove-song-btn:hover {
-  color: #ff6b6b;
-}
-
-/* Delete Playlist Button */
-.delete-playlist-btn {
-  background: none;
-  border: 1px solid #ff6b6b;
-  color: #ff6b6b;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-  margin-top: 15px;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.delete-playlist-btn:hover {
-  background-color: #ff6b6b;
-  color: #2b1a00;
-}
-
-/* Delete Confirmation Modal */
-.delete-confirm-modal {
-  background-color: #7b4739;
-  border-radius: 20px;
-  padding: 40px;
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-}
-
-.delete-confirm-title {
-  font-size: 24px;
-  font-weight: bold;
-  color: #f5f5f5;
-  margin-bottom: 15px;
-}
-
-.delete-confirm-text {
-  color: #c4b8a8;
-  margin-bottom: 25px;
-  line-height: 1.5;
-}
-
-.delete-confirm-buttons {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-}
-
-.delete-confirm-btn {
-  padding: 12px 30px;
-  border-radius: 25px;
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.delete-confirm-btn.cancel {
-  background-color: transparent;
-  color: #f5f5f5;
-  border: 1px solid #f5f5f5;
-}
-
-.delete-confirm-btn.delete {
-  background-color: #ff6b6b;
-  color: #fff;
-  border: none;
-}
-
-.delete-confirm-btn.delete:hover {
-  background-color: #ff5252;
-}
-
-/* Add these styles to your PlaylistDetail.css */
-
-/* Clickable album name */
-.album-name.clickable {
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.album-name.clickable:hover {
-  color: #d4a574;
-  text-decoration: underline;
-}
-
-/* Edit button next to title */
-.edit-playlist-btn {
-  background: none;
-  border: 1px solid #8a7a6a;
-  color: #8a7a6a;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  cursor: pointer;
-  font-family: inherit;
-  margin-left: 15px;
-  transition: all 0.2s;
-}
-
-.edit-playlist-btn:hover {
-  border-color: #d4a574;
-  color: #d4a574;
-}
-
-/* Edit Playlist Modal */
-.edit-playlist-modal {
-  background-color: #7b4739;
-  border-radius: 20px;
-  padding: 40px;
-  width: 100%;
-  max-width: 450px;
-}
-
-.edit-modal-title {
-  font-size: 24px;
-  font-weight: bold;
-  color: #f5f5f5;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.edit-modal-input {
-  width: 100%;
-  padding: 15px 20px;
-  margin-bottom: 15px;
-  border-radius: 25px;
-  border: none;
-  background-color: #4a3028;
-  color: #f5f5f5;
-  font-size: 14px;
-  font-family: inherit;
-}
-
-.edit-modal-input::placeholder {
-  color: #c4b8a8;
-}
-
-.edit-modal-textarea {
-  width: 100%;
-  padding: 15px 20px;
-  margin-bottom: 15px;
-  border-radius: 15px;
-  border: none;
-  background-color: #4a3028;
-  color: #f5f5f5;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 80px;
-}
-
-.edit-modal-textarea::placeholder {
-  color: #c4b8a8;
-}
-
-.edit-modal-buttons {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.edit-modal-btn {
-  padding: 12px 30px;
-  border-radius: 25px;
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.edit-modal-btn.save {
-  background-color: #d4c4a8;
-  color: #2b1a00;
-  border: none;
-}
-
-.edit-modal-btn.cancel {
-  background-color: transparent;
-  color: #f5f5f5;
-  border: 1px solid #f5f5f5;
 }

@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import './Playlists.css'
 
+// Character limits
+const LIMITS = {
+  playlistName: 50,
+  playlistDescription: 150
+}
+
 function Playlists() {
   const navigate = useNavigate()
   const [currentUser, setCurrentUser] = useState(null)
@@ -49,11 +55,7 @@ function Playlists() {
               .eq('id', playlist.user_id)
               .single()
             
-            return {
-              ...playlist,
-              playlist_songs: songs || [],
-              profiles: profile
-            }
+            return { ...playlist, playlist_songs: songs || [], profiles: profile }
           })
         )
 
@@ -88,8 +90,8 @@ function Playlists() {
       .from('playlists')
       .insert({
         user_id: currentUser.id,
-        title: newPlaylistName,
-        description: newPlaylistDescription
+        title: newPlaylistName.slice(0, LIMITS.playlistName),
+        description: newPlaylistDescription.slice(0, LIMITS.playlistDescription)
       })
       .select()
       .single()
@@ -109,46 +111,30 @@ function Playlists() {
     }
   }
 
-  // Handle clicking on the playlist card
   const handlePlaylistClick = (playlistId) => {
     navigate(`/playlist/${playlistId}`)
   }
 
-  // Handle clicking on user profile (stop propagation to prevent card click)
   const handleUserClick = (e, userId) => {
     e.stopPropagation()
     navigate(`/profile/${userId}`)
   }
 
   const PlaylistCard = ({ playlist }) => (
-    <div 
-      className="playlist-card"
-      onClick={() => handlePlaylistClick(playlist.id)}
-    >
+    <div className="playlist-card" onClick={() => handlePlaylistClick(playlist.id)}>
       <div className="playlist-header">
         <span className="playlist-name">{playlist.title}</span>
-        {playlist.description && (
-          <span className="playlist-description">{playlist.description}</span>
-        )}
       </div>
       <div className="playlist-content">
         <div className="playlist-albums">
           {playlist.playlist_songs?.slice(0, 4).map((song, index) => (
-            <img
-              key={index}
-              src={song.album_cover}
-              alt={song.track_name}
-              className="playlist-album-cover"
-            />
+            <img key={index} src={song.album_cover} alt={song.track_name} className="playlist-album-cover" />
           ))}
           {(!playlist.playlist_songs || playlist.playlist_songs.length === 0) && (
             <div className="empty-state" style={{ padding: '20px' }}>No songs yet</div>
           )}
         </div>
-        <div 
-          className="playlist-user"
-          onClick={(e) => handleUserClick(e, playlist.user_id)}
-        >
+        <div className="playlist-user" onClick={(e) => handleUserClick(e, playlist.user_id)}>
           {playlist.profiles?.avatar_url ? (
             <img src={playlist.profiles.avatar_url} alt="" className="playlist-user-avatar" />
           ) : (
@@ -211,19 +197,30 @@ function Playlists() {
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2 className="modal-title">create playlist</h2>
-            <input
-              type="text"
-              placeholder="playlist name"
-              className="modal-input"
-              value={newPlaylistName}
-              onChange={e => setNewPlaylistName(e.target.value)}
-            />
-            <textarea
-              placeholder="description (optional)"
-              className="modal-textarea"
-              value={newPlaylistDescription}
-              onChange={e => setNewPlaylistDescription(e.target.value)}
-            />
+            
+            <div className="input-wrapper">
+              <input
+                type="text"
+                placeholder="playlist name"
+                className="modal-input"
+                value={newPlaylistName}
+                onChange={e => setNewPlaylistName(e.target.value.slice(0, LIMITS.playlistName))}
+                maxLength={LIMITS.playlistName}
+              />
+              <span className="char-count">{newPlaylistName.length}/{LIMITS.playlistName}</span>
+            </div>
+
+            <div className="input-wrapper">
+              <textarea
+                placeholder="description (optional)"
+                className="modal-textarea"
+                value={newPlaylistDescription}
+                onChange={e => setNewPlaylistDescription(e.target.value.slice(0, LIMITS.playlistDescription))}
+                maxLength={LIMITS.playlistDescription}
+              />
+              <span className="char-count">{newPlaylistDescription.length}/{LIMITS.playlistDescription}</span>
+            </div>
+
             <div className="modal-buttons">
               <button className="modal-btn cancel" onClick={() => setShowCreateModal(false)}>
                 cancel

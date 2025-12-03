@@ -827,3 +827,27 @@
   color: #f5f5f5;
   font-weight: bold;
 }
+
+.input-wrapper {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.input-wrapper .modal-input {
+  margin-bottom: 0;
+  padding-right: 50px;
+}
+
+.input-wrapper .modal-textarea {
+  margin-bottom: 0;
+  resize: none;
+}
+
+.char-count {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  font-size: 11px;
+  color: #a89a8a;
+  pointer-events: none;
+}
