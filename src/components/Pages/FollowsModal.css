@@ -1,0 +1,175 @@
+/* Follows Modal */
+.follows-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.follows-modal {
+  background-color: #7b4739;
+  border-radius: 20px;
+  padding: 30px;
+  width: 100%;
+  max-width: 450px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.follows-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.follows-modal-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #f5f5f5;
+}
+
+.follows-modal-close {
+  background: none;
+  border: none;
+  color: #c4b8a8;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.follows-modal-close:hover {
+  color: #f5f5f5;
+}
+
+/* Tabs */
+.follows-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.follows-tab {
+  flex: 1;
+  padding: 10px;
+  background-color: transparent;
+  border: 1px solid #5a4a3f;
+  color: #c4b8a8;
+  border-radius: 20px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.follows-tab.active {
+  background-color: #d4c4a8;
+  border-color: #d4c4a8;
+  color: #2b1a00;
+}
+
+.follows-tab:hover:not(.active) {
+  border-color: #c4b8a8;
+  color: #f5f5f5;
+}
+
+/* User List */
+.follows-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.follows-user {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.follows-user:hover {
+  background-color: #8b5749;
+}
+
+.follows-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #5a4a3f;
+}
+
+.follows-user-info {
+  flex: 1;
+}
+
+.follows-username {
+  font-size: 16px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 3px;
+}
+
+.follows-bio {
+  font-size: 13px;
+  color: #c4b8a8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.follows-action-btn {
+  padding: 6px 16px;
+  border-radius: 15px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.follows-action-btn.follow {
+  background-color: #d4c4a8;
+  color: #2b1a00;
+  border: none;
+}
+
+.follows-action-btn.following {
+  background-color: transparent;
+  color: #c4b8a8;
+  border: 1px solid #c4b8a8;
+}
+
+.follows-action-btn:hover {
+  opacity: 0.8;
+}
+
+/* Empty State */
+.follows-empty {
+  text-align: center;
+  color: #c4b8a8;
+  padding: 40px 20px;
+  font-style: italic;
+}
+
+/* Scrollbar */
+.follows-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.follows-list::-webkit-scrollbar-track {
+  background: #5a3a30;
+  border-radius: 4px;
+}
+
+.follows-list::-webkit-scrollbar-thumb {
+  background: #d4a574;
+  border-radius: 4px;
+}

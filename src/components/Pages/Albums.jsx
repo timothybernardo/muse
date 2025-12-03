@@ -9,8 +9,13 @@ function Albums() {
   const [profile, setProfile] = useState(null)
   const [followingReviews, setFollowingReviews] = useState([])
   const [recentlyReviewed, setRecentlyReviewed] = useState([])
+  const [popularOnMuse, setPopularOnMuse] = useState([])
+  const [highlyRated, setHighlyRated] = useState([])
+  const [discoverAlbums, setDiscoverAlbums] = useState([])
+  const [usersToFollow, setUsersToFollow] = useState([])
   const [loading, setLoading] = useState(true)
   const [albumStats, setAlbumStats] = useState({})
+  const [hasFollowing, setHasFollowing] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -19,6 +24,8 @@ function Albums() {
   const fetchData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
+      let followingIds = []
+      
       if (user) {
         const { data } = await supabase
           .from('profiles')
@@ -27,15 +34,17 @@ function Albums() {
           .single()
         setProfile(data)
 
-        // 1. RECENTLY REVIEWED BY PEOPLE YOU FOLLOW
+        // Check if user follows anyone
         const { data: following } = await supabase
           .from('follows')
           .select('following_id')
           .eq('follower_id', user.id)
 
         if (following && following.length > 0) {
-          const followingIds = following.map(f => f.following_id)
+          setHasFollowing(true)
+          followingIds = following.map(f => f.following_id)
           
+          // REVIEWED BY PEOPLE YOU FOLLOW
           const { data: followingReviewsData } = await supabase
             .from('reviews')
             .select('album_id')
@@ -57,9 +66,38 @@ function Albums() {
             setFollowingReviews(albums.filter(a => a !== null))
           }
         }
+
+        // USERS TO FOLLOW (if not following anyone)
+        if (!following || following.length === 0) {
+          const { data: activeUsers } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .neq('id', user.id)
+            .limit(10)
+
+          if (activeUsers) {
+            // Get review counts for each user
+            const usersWithStats = await Promise.all(
+              activeUsers.map(async (u) => {
+                const { count } = await supabase
+                  .from('reviews')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('user_id', u.id)
+                return { ...u, reviewCount: count || 0 }
+              })
+            )
+            // Sort by most reviews and take top 5
+            setUsersToFollow(
+              usersWithStats
+                .filter(u => u.reviewCount > 0)
+                .sort((a, b) => b.reviewCount - a.reviewCount)
+                .slice(0, 5)
+            )
+          }
+        }
       }
 
-      // 2. RECENTLY REVIEWED BY ALL USERS
+      // RECENTLY REVIEWED BY ALL USERS
       const { data: recentReviews } = await supabase
         .from('reviews')
         .select('album_id')
@@ -80,8 +118,87 @@ function Albums() {
         setRecentlyReviewed(reviewedAlbums.filter(a => a !== null))
       }
 
-      // Fetch real stats for all albums
-      const allAlbumIds = recentReviews?.map(r => r.album_id) || []
+      // POPULAR ON MUSE (most listens)
+      const { data: popularListens } = await supabase
+        .from('listens')
+        .select('album_id')
+      
+      if (popularListens && popularListens.length > 0) {
+        // Count listens per album
+        const listenCounts = {}
+        popularListens.forEach(l => {
+          listenCounts[l.album_id] = (listenCounts[l.album_id] || 0) + 1
+        })
+        
+        // Sort by count and get top albums
+        const sortedAlbumIds = Object.entries(listenCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 15)
+          .map(([id]) => id)
+        
+        const popularAlbums = await Promise.all(
+          sortedAlbumIds.map(async (albumId) => {
+            try {
+              return await spotifyService.getAlbum(albumId)
+            } catch (e) {
+              return null
+            }
+          })
+        )
+        setPopularOnMuse(popularAlbums.filter(a => a !== null))
+      }
+
+      // HIGHLY RATED (average rating >= 4)
+      const { data: allReviews } = await supabase
+        .from('reviews')
+        .select('album_id, rating')
+      
+      if (allReviews && allReviews.length > 0) {
+        // Calculate average rating per album
+        const albumRatings = {}
+        allReviews.forEach(r => {
+          if (!albumRatings[r.album_id]) {
+            albumRatings[r.album_id] = { total: 0, count: 0 }
+          }
+          albumRatings[r.album_id].total += r.rating || 0
+          albumRatings[r.album_id].count += 1
+        })
+        
+        // Get albums with avg >= 4 and at least 1 review
+        const highlyRatedIds = Object.entries(albumRatings)
+          .map(([id, data]) => ({ id, avg: data.total / data.count, count: data.count }))
+          .filter(a => a.avg >= 4)
+          .sort((a, b) => b.avg - a.avg || b.count - a.count)
+          .slice(0, 15)
+          .map(a => a.id)
+        
+        const ratedAlbums = await Promise.all(
+          highlyRatedIds.map(async (albumId) => {
+            try {
+              return await spotifyService.getAlbum(albumId)
+            } catch (e) {
+              return null
+            }
+          })
+        )
+        setHighlyRated(ratedAlbums.filter(a => a !== null))
+      }
+
+      // DISCOVER NEW MUSIC - Spotify's new releases
+      try {
+        const newReleases = await spotifyService.getNewReleases(20)
+        setDiscoverAlbums(newReleases.slice(0, 15))
+      } catch (e) {
+        console.error('Error fetching new releases:', e)
+      }
+
+      // Fetch stats for all albums
+      const allAlbumIds = [
+        ...(recentReviews?.map(r => r.album_id) || []),
+        ...popularOnMuse.map(a => a?.id).filter(Boolean),
+        ...highlyRated.map(a => a?.id).filter(Boolean)
+      ]
+      
       const stats = {}
       const uniqueIds = [...new Set(allAlbumIds)]
       
@@ -155,6 +272,18 @@ function Albums() {
     )
   }
 
+  const UserCard = ({ user }) => (
+    <div className="user-card" onClick={() => navigate(`/profile/${user.id}`)}>
+      {user.avatar_url ? (
+        <img src={user.avatar_url} alt={user.username} className="user-card-avatar" />
+      ) : (
+        <div className="user-card-avatar placeholder" />
+      )}
+      <p className="user-card-name">{user.username}</p>
+      <p className="user-card-reviews">{user.reviewCount} reviews</p>
+    </div>
+  )
+
   const AlbumSection = ({ title, albums }) => {
     const [scrollIndex, setScrollIndex] = useState(0)
     const visibleCount = 5
@@ -211,16 +340,41 @@ function Albums() {
         </h1>
       </div>
 
+      {/* Show users to follow if not following anyone */}
+      {!hasFollowing && usersToFollow.length > 0 && (
+        <div className="albums-section">
+          <h2 className="section-title">users to follow</h2>
+          <div className="section-line"></div>
+          <div className="users-grid">
+            {usersToFollow.map(user => (
+              <UserCard key={user.id} user={user} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {followingReviews.length > 0 && (
         <AlbumSection title="reviewed by people you follow" albums={followingReviews} />
+      )}
+
+      {popularOnMuse.length > 0 && (
+        <AlbumSection title="popular on muse" albums={popularOnMuse} />
+      )}
+
+      {highlyRated.length > 0 && (
+        <AlbumSection title="highly rated" albums={highlyRated} />
       )}
       
       {recentlyReviewed.length > 0 && (
         <AlbumSection title="recently reviewed" albums={recentlyReviewed} />
       )}
 
-      {followingReviews.length === 0 && recentlyReviewed.length === 0 && (
-        <p className="loading-text">No reviews yet. Start exploring and reviewing albums!</p>
+      {discoverAlbums.length > 0 && (
+        <AlbumSection title="new releases" albums={discoverAlbums} />
+      )}
+
+      {recentlyReviewed.length === 0 && discoverAlbums.length === 0 && (
+        <p className="loading-text">No albums yet. Use search to find albums to review!</p>
       )}
     </div>
   )

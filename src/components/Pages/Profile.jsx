@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { spotifyService } from '../../services/spotify'
 import './Profile.css'
+import FollowsModal from './FollowsModal'
 
 function Profile() {
   const { userId } = useParams()
@@ -16,6 +17,8 @@ function Profile() {
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const fileInputRef = useRef(null)
+  const [showFollowsModal, setShowFollowsModal] = useState(false)
+  const [followsTab, setFollowsTab] = useState('followers')
 
   const [stats, setStats] = useState({
     albumsListened: 0,
@@ -38,7 +41,25 @@ function Profile() {
   const [modalRating, setModalRating] = useState(0)
   const [reviewText, setReviewText] = useState('')
 
-  useEffect(() => { fetchData() }, [userId])
+  useEffect(() => {
+  // Reset all state when userId changes
+  setProfile(null)
+  setReviews([])
+  setRecentlyListened([])
+  setPlaylists([])
+  setFavoriteAlbums([])
+  setStats({
+    albumsListened: 0,
+    averageRating: 0,
+    playlistCount: 0,
+    followersCount: 0,
+    followingCount: 0
+  })
+  setIsFollowing(false)
+  setLoading(true)
+  
+  fetchData()
+}, [userId])
 
   const fetchData = async () => {
     try {
@@ -230,8 +251,18 @@ function Profile() {
         <div className="profile-info">
           <h1 className="profile-username">{profile?.username || 'User'}</h1>
           <div className="profile-follow-stats">
-            <span><strong>{stats.followersCount}</strong> followers</span>
-            <span><strong>{stats.followingCount}</strong> following</span>
+            <span 
+    onClick={() => { setFollowsTab('followers'); setShowFollowsModal(true) }}
+    style={{ cursor: 'pointer' }}
+  >
+    <strong>{stats.followersCount}</strong> followers
+  </span>
+            <span 
+    onClick={() => { setFollowsTab('following'); setShowFollowsModal(true) }}
+    style={{ cursor: 'pointer' }}
+  >
+    <strong>{stats.followingCount}</strong> following
+  </span>
           </div>
           {profile?.bio && <p className="profile-bio">{profile.bio}</p>}
         </div>
@@ -421,6 +452,13 @@ function Profile() {
           </div>
         </div>
       )}
+      {showFollowsModal && (
+  <FollowsModal 
+    userId={userId || currentUser?.id}
+    initialTab={followsTab}
+    onClose={() => setShowFollowsModal(false)}
+  />
+)}
     </div>
   )
 }
