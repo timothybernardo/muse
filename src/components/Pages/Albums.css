@@ -168,3 +168,15 @@
   text-align: center;
   padding: 40px;
 }
+
+.carousel-btn.prev {
+  position: absolute;
+  left: -40px;
+}
+
+.albums-grid-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 50px;
+}

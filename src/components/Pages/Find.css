@@ -1,0 +1,265 @@
+.find-page {
+  height: calc(100vh - 100px);
+  background-color: #2b1a00;
+  padding: 20px 60px;
+  display: flex;
+  flex-direction: column;
+}
+
+.find-content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.find-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.find-title {
+  font-size: 36px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 10px;
+}
+
+.find-subtitle {
+  font-size: 16px;
+  color: #c4b8a8;
+  font-style: italic;
+}
+
+/* Chat Container */
+.chat-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Suggestions */
+.suggestions {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.suggestions-label {
+  font-size: 14px;
+  color: #8a7a6a;
+  margin-bottom: 20px;
+}
+
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.suggestion-chip {
+  background-color: #3d2814;
+  border: 1px solid #5a4a3f;
+  color: #c4b8a8;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggestion-chip:hover {
+  background-color: #4a3520;
+  border-color: #7b4739;
+  color: #f5f5f5;
+}
+
+/* Chat Messages */
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chat-message {
+  max-width: 80%;
+  padding: 15px 20px;
+  border-radius: 20px;
+  line-height: 1.6;
+}
+
+.chat-message.user {
+  background-color: #7b4739;
+  color: #f5f5f5;
+  align-self: flex-end;
+  border-bottom-right-radius: 5px;
+}
+
+.chat-message.assistant {
+  background-color: #3d2814;
+  color: #e8dcc8;
+  align-self: flex-start;
+  border-bottom-left-radius: 5px;
+}
+
+.message-content {
+  font-size: 15px;
+  white-space: pre-wrap;
+}
+
+/* Loading Animation */
+.loading-dots span {
+  animation: blink 1.4s infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Recommendations */
+.recommendations {
+  margin-top: 30px;
+  padding: 25px;
+  background-color: #3d2814;
+  border-radius: 20px;
+}
+
+.recommendations-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 20px;
+}
+
+.recommendations-grid {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.recommendation-card {
+  flex-shrink: 0;
+  width: 140px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.recommendation-card:hover {
+  transform: scale(1.05);
+}
+
+.recommendation-cover {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.recommendation-info {
+  text-align: center;
+}
+
+.recommendation-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f5f5f5;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recommendation-artist {
+  font-size: 12px;
+  color: #c4b8a8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Input */
+.find-input-container {
+  display: flex;
+  gap: 15px;
+  padding: 15px 0;
+  border-top: 1px solid #5a4a3f;
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.find-input {
+  flex: 1;
+  padding: 18px 25px;
+  border-radius: 30px;
+  border: none;
+  background-color: #3d2814;
+  color: #f5f5f5;
+  font-size: 16px;
+  font-family: inherit;
+}
+
+.find-input::placeholder {
+  color: #8a7a6a;
+}
+
+.find-input:focus {
+  outline: none;
+  background-color: #4a3520;
+}
+
+.find-input:disabled {
+  opacity: 0.7;
+}
+
+.find-submit {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  background-color: #7b4739;
+  color: #f5f5f5;
+  font-size: 24px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.find-submit:hover:not(:disabled) {
+  background-color: #8b5749;
+}
+
+.find-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Scrollbar */
+.chat-container::-webkit-scrollbar,
+.recommendations-grid::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.chat-container::-webkit-scrollbar-track,
+.recommendations-grid::-webkit-scrollbar-track {
+  background: #3d2814;
+  border-radius: 4px;
+}
+
+.chat-container::-webkit-scrollbar-thumb,
+.recommendations-grid::-webkit-scrollbar-thumb {
+  background: #7b4739;
+  border-radius: 4px;
+}

@@ -7,55 +7,125 @@ import './Albums.css'
 function Albums() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
-  const [newReleases, setNewReleases] = useState([])
+  const [followingReviews, setFollowingReviews] = useState([])
   const [recentlyReviewed, setRecentlyReviewed] = useState([])
-  const [curatedAlbums, setCuratedAlbums] = useState([])
   const [loading, setLoading] = useState(true)
-
-  // Placeholder stats - will come from your database later
-  const getAlbumStats = (album) => ({
-    listens: '1k',
-    reviews: 100,
-    rating: Math.floor(Math.random() * 3) + 3 // Random 3-5 for demo
-  })
+  const [albumStats, setAlbumStats] = useState({})
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get current user profile
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', user.id)
-            .single()
-          setProfile(data)
-        }
-
-        // Fetch new releases from Spotify
-        const releases = await spotifyService.getNewReleases(12)
-        setNewReleases(releases)
-
-        // For now, use same data for other sections
-        // Later you'll fetch from your own database
-        setRecentlyReviewed(releases.slice(0, 8))
-        setCuratedAlbums(releases.slice(4, 12))
-
-      } catch (error) {
-        console.error('Error fetching data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchData()
   }, [])
+
+  const fetchData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .single()
+        setProfile(data)
+
+        // 1. RECENTLY REVIEWED BY PEOPLE YOU FOLLOW
+        const { data: following } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', user.id)
+
+        if (following && following.length > 0) {
+          const followingIds = following.map(f => f.following_id)
+          
+          const { data: followingReviewsData } = await supabase
+            .from('reviews')
+            .select('album_id')
+            .in('user_id', followingIds)
+            .order('created_at', { ascending: false })
+            .limit(30)
+
+          if (followingReviewsData && followingReviewsData.length > 0) {
+            const uniqueAlbumIds = [...new Set(followingReviewsData.map(r => r.album_id))]
+            const albums = await Promise.all(
+              uniqueAlbumIds.slice(0, 15).map(async (albumId) => {
+                try {
+                  return await spotifyService.getAlbum(albumId)
+                } catch (e) {
+                  return null
+                }
+              })
+            )
+            setFollowingReviews(albums.filter(a => a !== null))
+          }
+        }
+      }
+
+      // 2. RECENTLY REVIEWED BY ALL USERS
+      const { data: recentReviews } = await supabase
+        .from('reviews')
+        .select('album_id')
+        .order('created_at', { ascending: false })
+        .limit(30)
+
+      if (recentReviews && recentReviews.length > 0) {
+        const uniqueAlbumIds = [...new Set(recentReviews.map(r => r.album_id))]
+        const reviewedAlbums = await Promise.all(
+          uniqueAlbumIds.slice(0, 15).map(async (albumId) => {
+            try {
+              return await spotifyService.getAlbum(albumId)
+            } catch (e) {
+              return null
+            }
+          })
+        )
+        setRecentlyReviewed(reviewedAlbums.filter(a => a !== null))
+      }
+
+      // Fetch real stats for all albums
+      const allAlbumIds = recentReviews?.map(r => r.album_id) || []
+      const stats = {}
+      const uniqueIds = [...new Set(allAlbumIds)]
+      
+      for (const albumId of uniqueIds) {
+        const { count: listenCount } = await supabase
+          .from('listens')
+          .select('*', { count: 'exact', head: true })
+          .eq('album_id', albumId)
+        
+        const { data: reviews } = await supabase
+          .from('reviews')
+          .select('rating')
+          .eq('album_id', albumId)
+        
+        const reviewCount = reviews?.length || 0
+        const avgRating = reviewCount > 0 
+          ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount 
+          : 0
+        
+        stats[albumId] = {
+          listens: listenCount || 0,
+          reviews: reviewCount,
+          rating: avgRating
+        }
+      }
+      
+      setAlbumStats(stats)
+
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatListens = (count) => {
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'k'
+    return count.toString()
+  }
 
   const renderStars = (rating) => {
     const stars = []
     const fullStars = Math.floor(rating)
-    const hasHalf = rating % 1 !== 0
+    const hasHalf = rating % 1 >= 0.5
     for (let i = 0; i < fullStars; i++) {
       stars.push(<span key={i} className="star filled">★</span>)
     }
@@ -70,14 +140,14 @@ function Albums() {
   }
 
   const AlbumCard = ({ album }) => {
-    const stats = getAlbumStats(album)
+    const stats = albumStats[album.id] || { listens: 0, reviews: 0, rating: 0 }
     const coverImage = album.images?.[0]?.url || album.cover
 
     return (
       <div className="album-card" onClick={() => navigate(`/album/${album.id}`)}>
         <img src={coverImage} alt={album.name} className="album-cover" />
         <div className="album-stats">
-          <span className="album-stat">🎧 {stats.listens}</span>
+          <span className="album-stat">🎧 {formatListens(stats.listens)}</span>
           <span className="album-stat">✎ {stats.reviews}</span>
         </div>
         <div className="album-rating">{renderStars(stats.rating)}</div>
@@ -87,7 +157,7 @@ function Albums() {
 
   const AlbumSection = ({ title, albums }) => {
     const [scrollIndex, setScrollIndex] = useState(0)
-    const visibleCount = 4
+    const visibleCount = 5
     const maxIndex = Math.max(0, albums.length - visibleCount)
 
     const handleNext = () => {
@@ -105,18 +175,21 @@ function Albums() {
         <h2 className="section-title">{title}</h2>
         <div className="section-line"></div>
         <div className="albums-grid-container">
+          {scrollIndex > 0 && (
+            <button className="carousel-btn prev" onClick={handlePrev}>
+              ‹
+            </button>
+          )}
           <div className="albums-grid">
             {visibleAlbums.map(album => (
               <AlbumCard key={album.id} album={album} />
             ))}
           </div>
-          <button 
-            className="carousel-btn" 
-            onClick={handleNext}
-            disabled={scrollIndex >= maxIndex}
-          >
-            ›
-          </button>
+          {scrollIndex < maxIndex && (
+            <button className="carousel-btn" onClick={handleNext}>
+              ›
+            </button>
+          )}
         </div>
       </div>
     )
@@ -138,9 +211,17 @@ function Albums() {
         </h1>
       </div>
 
-      <AlbumSection title="projects released this week" albums={newReleases} />
-      <AlbumSection title="recently posted by users" albums={recentlyReviewed} />
-      <AlbumSection title="curated albums by the creator" albums={curatedAlbums} />
+      {followingReviews.length > 0 && (
+        <AlbumSection title="reviewed by people you follow" albums={followingReviews} />
+      )}
+      
+      {recentlyReviewed.length > 0 && (
+        <AlbumSection title="recently reviewed" albums={recentlyReviewed} />
+      )}
+
+      {followingReviews.length === 0 && recentlyReviewed.length === 0 && (
+        <p className="loading-text">No reviews yet. Start exploring and reviewing albums!</p>
+      )}
     </div>
   )
 }

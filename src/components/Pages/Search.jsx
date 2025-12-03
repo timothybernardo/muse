@@ -24,7 +24,7 @@ function Search() {
         const albums = await spotifyService.searchAlbums(searchQuery, 20)
         setResults(albums)
       } else if (activeTab === 'playlists') {
-        console.log('Searching playlists for:', searchQuery)
+        console.log('searching playlists for:', searchQuery)
         
         const { data, error } = await supabase
           .from('playlists')
