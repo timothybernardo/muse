@@ -65,13 +65,28 @@ function AlbumDetail() {
     return []
   }
 
-  const fetchData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      setCurrentUser(user)
+  // In your AlbumDetail.jsx, update the fetchData function to also fetch artist genres:
 
-      const albumData = await spotifyService.getAlbum(id)
-      setAlbum(albumData)
+const fetchData = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    setCurrentUser(user)
+
+    const albumData = await spotifyService.getAlbum(id)
+    
+    // Fetch artist to get genres (albums often don't have genres)
+    if (albumData.artists?.[0]?.id) {
+      try {
+        const artistData = await spotifyService.getArtist(albumData.artists[0].id)
+        albumData.genres = artistData.genres || []
+      } catch (e) {
+        console.log('Could not fetch artist genres')
+      }
+    }
+    
+    setAlbum(albumData)
+
+    // ... rest of your fetchData code
 
       const reviewsData = await fetchReviews()
       setReviews(reviewsData)
@@ -376,7 +391,9 @@ function AlbumDetail() {
             <div className="album-meta">
               <p className="meta-item"><span className="meta-label">release date:</span> {releaseDate}</p>
               <p className="meta-item"><span className="meta-label">format:</span> {album.album_type}</p>
-              <p className="meta-item"><span className="meta-label">genres:</span> {album.genres?.join(', ') || 'N/A'}</p>
+             {album.genres?.length > 0 && (
+  <p className="meta-item"><span className="meta-label">genres:</span> {album.genres.join(', ')}</p>
+)}
               <p className="meta-item"><span className="meta-label">label:</span> {album.label || 'N/A'}</p>
               <p className="meta-item"><span className="meta-label">tracks:</span> {album.total_tracks}</p>
             </div>

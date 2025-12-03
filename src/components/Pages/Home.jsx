@@ -1,16 +1,101 @@
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../../services/supabase'
+import { spotifyService } from '../../services/spotify'
 import './Home.css'
 import logo from '../../assets/logo.png'
 
 function Home() {
-  // Placeholder album data - replace with real data later
-  const spinningAlbums = [
-    { id: 1, title: 'Thriller', artist: 'Michael Jackson', cover: 'https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png', listens: '1k', reviews: 100, rating: 5 },
-    { id: 2, title: 'Hurry Up Tomorrow', artist: 'The Weeknd', cover: 'https://upload.wikimedia.org/wikipedia/en/f/f0/The_Weeknd_-_Hurry_Up_Tomorrow.png', listens: '1k', reviews: 100, rating: 2 },
-    { id: 3, title: 'Utopia', artist: 'Travis Scott', cover: 'https://i.scdn.co/image/ab67616d00001e0204481c826dd292e5e4983b3f', listens: '1k', reviews: 100, rating: 4 },
-    { id: 4, title: 'Cry', artist: 'Cigarettes After Sex', cover: 'https://images.genius.com/7f53e3ec9752c0f901d9d1370b569507.1000x1000x1.jpg', listens: '1k', reviews: 100, rating: 3.5 },
-     { id: 5, title: 'Cry', artist: 'Cigarettes After Sex', cover: 'https://images.genius.com/7f53e3ec9752c0f901d9d1370b569507.1000x1000x1.jpg', listens: '1k', reviews: 100, rating: 3.5 },
-  ]
+  const navigate = useNavigate()
+  const [spinningAlbums, setSpinningAlbums] = useState([])
+  const [albumStats, setAlbumStats] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [reviewAlbum, setReviewAlbum] = useState(null)
+  const [aiAlbums, setAiAlbums] = useState([])
+  const [playlistAlbums, setPlaylistAlbums] = useState([])
+
+  useEffect(() => {
+    fetchSpinningAlbums()
+    fetchFeatureAlbums()
+  }, [])
+
+  const fetchFeatureAlbums = async () => {
+    try {
+      // Fetch specific albums for each feature mockup
+      
+      // Review: Blonde by Frank Ocean
+      const blondeResults = await spotifyService.searchAlbums('Blonde Frank Ocean', 1)
+      if (blondeResults[0]) setReviewAlbum(blondeResults[0])
+      
+      // AI: Tyler, The Weeknd, Daniel Caesar
+      const tylerResults = await spotifyService.searchAlbums('Tyler the Creator IGOR', 1)
+      const weekndResults = await spotifyService.searchAlbums('After Hours Weeknd', 1)
+      const danielResults = await spotifyService.searchAlbums('Freudian Daniel Caesar', 1)
+      setAiAlbums([tylerResults[0], weekndResults[0], danielResults[0]].filter(Boolean))
+      
+      // Playlist: Kendrick, SZA, Ravyn Lenae
+      const kendrickResults = await spotifyService.searchAlbums('good kid maad city Kendrick', 1)
+      const szaResults = await spotifyService.searchAlbums('SOS SZA', 1)
+      const ravynResults = await spotifyService.searchAlbums('Hypnos Ravyn Lenae', 1)
+      const childishResults = await spotifyService.searchAlbums('Because The Internet Childish Gambino', 1)
+      setPlaylistAlbums([kendrickResults[0], szaResults[0], ravynResults[0], childishResults[0]].filter(Boolean))
+      
+    } catch (e) {
+      console.error('Error fetching feature albums:', e)
+    }
+  }
+
+  const fetchSpinningAlbums = async () => {
+    try {
+      const { data: recentListens } = await supabase
+        .from('listens')
+        .select('album_id')
+        .order('listened_at', { ascending: false })
+        .limit(20)
+
+      if (recentListens && recentListens.length > 0) {
+        const uniqueAlbumIds = [...new Set(recentListens.map(l => l.album_id))]
+        
+        const albums = await Promise.all(
+          uniqueAlbumIds.slice(0, 6).map(async (albumId) => {
+            try {
+              return await spotifyService.getAlbum(albumId)
+            } catch (e) {
+              return null
+            }
+          })
+        )
+        
+        const validAlbums = albums.filter(a => a !== null)
+        setSpinningAlbums(validAlbums)
+
+        const stats = {}
+        for (const album of validAlbums) {
+          const { count: listenCount } = await supabase
+            .from('listens')
+            .select('*', { count: 'exact', head: true })
+            .eq('album_id', album.id)
+          
+          const { data: reviews } = await supabase
+            .from('reviews')
+            .select('rating')
+            .eq('album_id', album.id)
+          
+          const reviewCount = reviews?.length || 0
+          const avgRating = reviewCount > 0 
+            ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount 
+            : 0
+          
+          stats[album.id] = { listens: listenCount || 0, reviews: reviewCount, rating: avgRating }
+        }
+        setAlbumStats(stats)
+      }
+    } catch (error) {
+      console.error('Error fetching spinning albums:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const renderStars = (rating) => {
     const stars = []
@@ -29,19 +114,107 @@ function Home() {
     return stars
   }
 
+  const formatListens = (count) => {
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'k'
+    return count.toString()
+  }
+
+  // Animated feature mockups with real album art
+  const ReviewAnimation = () => (
+    <div className="feature-mockup review-mockup">
+      <div className="mockup-album">
+        {reviewAlbum ? (
+          <img src={reviewAlbum.images?.[0]?.url} alt="" className="mockup-album-art" />
+        ) : (
+          <div className="mockup-album-art placeholder"></div>
+        )}
+        <div className="mockup-album-info">
+          <div className="mockup-title">Blonde</div>
+          <div className="mockup-artist">Frank Ocean</div>
+        </div>
+      </div>
+      <div className="mockup-stars">
+        {[1, 2, 3, 4, 5].map(i => (
+          <span key={i} className="mockup-star">★</span>
+        ))}
+      </div>
+      <div className="mockup-review-box">
+        <div className="mockup-typing-text">A masterpiece of emotion...</div>
+      </div>
+    </div>
+  )
+
+  const AIAnimation = () => (
+    <div className="feature-mockup ai-mockup">
+      <div className="mockup-chat-bubble user">
+        <span>I want something like Frank Ocean</span>
+      </div>
+      <div className="mockup-chat-bubble assistant">
+        <span>Here are some albums you'll love:</span>
+      </div>
+      <div className="mockup-recommendations">
+        {aiAlbums.map((album, i) => (
+          album ? (
+            <img key={i} src={album.images?.[0]?.url} alt="" className="mockup-rec-album" />
+          ) : (
+            <div key={i} className="mockup-rec-album placeholder"></div>
+          )
+        ))}
+      </div>
+    </div>
+  )
+
+  const PlaylistAnimation = () => (
+    <div className="feature-mockup playlist-mockup">
+      <div className="mockup-playlist-header">
+        <div className="mockup-playlist-covers">
+          {playlistAlbums.slice(0, 4).map((album, i) => (
+            album ? (
+              <img key={i} src={album.images?.[0]?.url} alt="" className="mockup-mini-album" />
+            ) : (
+              <div key={i} className="mockup-mini-album placeholder"></div>
+            )
+          ))}
+          {/* Fill remaining slots if less than 4 */}
+          {playlistAlbums.length < 4 && [...Array(4 - playlistAlbums.length)].map((_, i) => (
+            <div key={`empty-${i}`} className="mockup-mini-album placeholder"></div>
+          ))}
+        </div>
+        <div className="mockup-playlist-info">
+          <div className="mockup-playlist-title">my favorites</div>
+          <div className="mockup-playlist-count">{playlistAlbums.length} songs</div>
+        </div>
+      </div>
+      <div className="mockup-track-list">
+        {playlistAlbums.map((album, i) => (
+          <div key={i} className="mockup-track">
+            {album ? (
+              <img src={album.images?.[0]?.url} alt="" className="mockup-track-art" />
+            ) : (
+              <div className="mockup-track-art placeholder"></div>
+            )}
+            <div className="mockup-track-info">
+              <div className="mockup-track-name">{album?.name?.slice(0, 20) || 'Track'}</div>
+              <div className="mockup-track-artist">{album?.artists?.[0]?.name || 'Artist'}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
   return (
     <div className="home-container">
       <nav className="home-nav">
         <Link to="/" className="logo">
-        <img src={logo} alt="Muse logo" className="logo-icon" />
-        <span className="logo-text">muse</span>
+          <img src={logo} alt="Muse logo" className="logo-icon" />
+          <span className="logo-text">muse</span>
         </Link>
-      <div className="nav-links">
-          <a href="#features">albums</a>
-          <a href="#features">find</a>
-          <a href="#features">playlists</a>
-          <a href="#features">profile</a>
-          <a href="#features">search</a>
+        <div className="nav-links">
+          <Link to="/albums">albums</Link>
+          <Link to="/find">find</Link>
+          <Link to="/playlists">playlists</Link>
+          <Link to="/search">search</Link>
           <Link to="/login" className="sign-in-btn">sign in</Link>
         </div>
       </nav>
@@ -58,41 +231,59 @@ function Home() {
         <div className="section-line"></div>
         <div className="features-grid">
           <div className="feature-item">
-            <div className="feature-card"></div>
-            <h3>write and rate current listens</h3>
-            <p>pick a star rating for an album and post. find other opinions on the album page.</p>
+            <div className="feature-card">
+              <ReviewAnimation />
+            </div>
+            <h3>rate and review albums</h3>
+            <p>Share your thoughts on albums with star ratings and written reviews. See what others think too.</p>
           </div>
           <div className="feature-item">
-            <div className="feature-card"></div>
-            <h3>encounter a new project</h3>
-            <p>either search by genre or use our ai assistant to explore new artists.</p>
+            <div className="feature-card">
+              <AIAnimation />
+            </div>
+            <h3>AI-powered discovery</h3>
+            <p>Tell our AI what mood you're in and get personalized album recommendations instantly.</p>
           </div>
           <div className="feature-item">
-            <div className="feature-card"></div>
-            <h3>make playlists</h3>
-            <p>gather your favorite albums and singles with personalized comments.</p>
+            <div className="feature-card">
+              <PlaylistAnimation />
+            </div>
+            <h3>create playlists</h3>
+            <p>Curate your favorite tracks into playlists with personal notes about why each song matters.</p>
           </div>
         </div>
       </div>
 
       <div className="currently-spinning">
-        <h3 className="section-title">users are now spinning:</h3>
+        <h3 className="section-title">users are now spinning</h3>
         <div className="section-line"></div>
-        <div className="albums-carousel">
-          {spinningAlbums.map(album => (
-            <div key={album.id} className="album-card">
-              <img src={album.cover} alt={album.title} className="album-cover" />
-              <div className="album-stats">
-                <span className="stat"><span className="icon">🎧</span> {album.listens}</span>
-                <span className="stat"><span className="icon">✎</span> {album.reviews}</span>
-              </div>
-              <div className="album-rating">
-                {renderStars(album.rating)}
-              </div>
-            </div>
-          ))}
-          <button className="carousel-next">›</button>
-        </div>
+        {loading ? (
+          <p className="loading-text">loading...</p>
+        ) : spinningAlbums.length > 0 ? (
+          <div className="albums-carousel">
+            {spinningAlbums.map(album => {
+              const stats = albumStats[album.id] || { listens: 0, reviews: 0, rating: 0 }
+              return (
+                <div 
+                  key={album.id} 
+                  className="album-card"
+                  onClick={() => navigate(`/album/${album.id}`)}
+                >
+                  <img src={album.images?.[0]?.url} alt={album.name} className="album-cover" />
+                  <div className="album-stats">
+                    <span className="stat">🎧 {formatListens(stats.listens)}</span>
+                    <span className="stat">✎ {stats.reviews}</span>
+                  </div>
+                  <div className="album-rating">
+                    {renderStars(stats.rating)}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="empty-text">No activity yet. Be the first to review an album!</p>
+        )}
       </div>
 
       <footer>

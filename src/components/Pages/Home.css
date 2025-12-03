@@ -230,3 +230,338 @@ footer {
   font-size: 14px;
   color: #a09080;
 }
+
+/* Update these in your Home.css */
+
+/* Feature card with icon */
+.feature-card {
+  background-color: #7b4739;
+  border-radius: 15px;
+  height: 180px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s, background-color 0.3s;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  background-color: #8b5749;
+}
+
+.feature-icon {
+  font-size: 64px;
+}
+
+/* Album card clickable */
+.album-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.album-card:hover {
+  transform: scale(1.05);
+}
+
+/* Empty/Loading text */
+.loading-text,
+.empty-text {
+  color: #c4b8a8;
+  text-align: center;
+  padding: 40px;
+  font-style: italic;
+}
+
+/* Add these to your Home.css for animated feature mockups */
+
+/* Feature Card */
+.feature-card {
+  background-color: #1a1a1a;
+  border-radius: 15px;
+  height: 240px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+/* Base Mockup Styles */
+.feature-mockup {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.placeholder {
+  background: linear-gradient(135deg, #7b4739, #5a3a30);
+}
+
+/* ============ REVIEW ANIMATION ============ */
+.review-mockup .mockup-album {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-mockup .mockup-album-art {
+  width: 55px;
+  height: 55px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.review-mockup .mockup-album-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.review-mockup .mockup-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f5f5f5;
+}
+
+.review-mockup .mockup-artist {
+  font-size: 12px;
+  color: #888;
+}
+
+.review-mockup .mockup-stars {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.review-mockup .mockup-star {
+  font-size: 28px;
+  color: #5a4a3f;
+  animation: starFill 3s ease-in-out infinite;
+}
+
+.review-mockup .mockup-star:nth-child(1) { animation-delay: 0s; }
+.review-mockup .mockup-star:nth-child(2) { animation-delay: 0.2s; }
+.review-mockup .mockup-star:nth-child(3) { animation-delay: 0.4s; }
+.review-mockup .mockup-star:nth-child(4) { animation-delay: 0.6s; }
+.review-mockup .mockup-star:nth-child(5) { animation-delay: 0.8s; }
+
+@keyframes starFill {
+  0%, 40% { color: #5a4a3f; }
+  50%, 90% { color: #d4a574; }
+  100% { color: #5a4a3f; }
+}
+
+.review-mockup .mockup-review-box {
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  padding: 12px;
+  flex: 1;
+}
+
+.review-mockup .mockup-typing-text {
+  font-size: 13px;
+  color: #c4b8a8;
+  font-style: italic;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriter 3s steps(25) infinite;
+}
+
+@keyframes typewriter {
+  0%, 10% { width: 0; }
+  50%, 90% { width: 100%; }
+  100% { width: 0; }
+}
+
+/* ============ AI ANIMATION ============ */
+.ai-mockup {
+  justify-content: center;
+}
+
+.ai-mockup .mockup-chat-bubble {
+  padding: 10px 14px;
+  border-radius: 15px;
+  max-width: 85%;
+  font-size: 12px;
+}
+
+.ai-mockup .mockup-chat-bubble.user {
+  background-color: #7b4739;
+  color: #f5f5f5;
+  align-self: flex-end;
+  animation: slideInRight 4s ease-in-out infinite;
+}
+
+.ai-mockup .mockup-chat-bubble.assistant {
+  background-color: #3d2814;
+  color: #e8dcc8;
+  align-self: flex-start;
+  animation: slideInLeft 4s ease-in-out infinite;
+  animation-delay: 1s;
+  opacity: 0;
+}
+
+@keyframes slideInRight {
+  0%, 15% { transform: translateX(50px); opacity: 0; }
+  25%, 100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  0%, 20% { transform: translateX(-50px); opacity: 0; }
+  35%, 100% { transform: translateX(0); opacity: 1; }
+}
+
+.ai-mockup .mockup-recommendations {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 10px;
+  animation: fadeInUp 4s ease-in-out infinite;
+  animation-delay: 1.8s;
+  opacity: 0;
+}
+
+@keyframes fadeInUp {
+  0%, 40% { transform: translateY(20px); opacity: 0; }
+  55%, 100% { transform: translateY(0); opacity: 1; }
+}
+
+.ai-mockup .mockup-rec-album {
+  width: 55px;
+  height: 55px;
+  border-radius: 6px;
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.ai-mockup .mockup-rec-album:hover {
+  transform: scale(1.1);
+}
+
+/* ============ PLAYLIST ANIMATION ============ */
+.playlist-mockup {
+  position: relative;
+}
+
+.playlist-mockup .mockup-playlist-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.playlist-mockup .mockup-playlist-covers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 50px;
+  height: 50px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.playlist-mockup .mockup-mini-album {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.playlist-mockup .mockup-playlist-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.playlist-mockup .mockup-playlist-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f5f5f5;
+}
+
+.playlist-mockup .mockup-playlist-count {
+  font-size: 11px;
+  color: #888;
+}
+
+.playlist-mockup .mockup-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.playlist-mockup .mockup-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  animation: trackSlideIn 5s ease-in-out infinite;
+}
+
+.playlist-mockup .mockup-track:nth-child(1) { animation-delay: 0s; }
+.playlist-mockup .mockup-track:nth-child(2) { animation-delay: 0.4s; }
+.playlist-mockup .mockup-track:nth-child(3) { animation-delay: 0.8s; }
+
+@keyframes trackSlideIn {
+  0%, 5% { transform: translateX(-30px); opacity: 0; }
+  15%, 85% { transform: translateX(0); opacity: 1; }
+  95%, 100% { transform: translateX(30px); opacity: 0; }
+}
+
+.playlist-mockup .mockup-track-art {
+  width: 35px;
+  height: 35px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.playlist-mockup .mockup-track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.playlist-mockup .mockup-track-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #f5f5f5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-mockup .mockup-track-artist {
+  font-size: 10px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Album card hover */
+.album-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.album-card:hover {
+  transform: scale(1.05);
+}
+
+/* Loading/Empty text */
+.loading-text,
+.empty-text {
+  color: #c4b8a8;
+  text-align: center;
+  padding: 40px;
+  font-style: italic;
+}
