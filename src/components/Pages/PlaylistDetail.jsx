@@ -222,10 +222,10 @@ function PlaylistDetail() {
       if (result.lyrics) {
         setLyrics(result.lyrics)
       } else {
-        setLyrics('Lyrics not found for this track.')
+        setLyrics('lyrics not found for this track.')
       }
     } catch (error) {
-      setLyrics('Failed to load lyrics.')
+      setLyrics('failed to load lyrics.')
     } finally {
       setLyricsLoading(false)
     }
@@ -506,7 +506,7 @@ function PlaylistDetail() {
             )}
             <div className="input-wrapper">
               <textarea
-                placeholder="Add a note about this song..."
+                placeholder="add a note about this song..."
                 className="edit-modal-textarea"
                 value={editNote}
                 onChange={e => setEditNote(e.target.value.slice(0, LIMITS.songNote))}
