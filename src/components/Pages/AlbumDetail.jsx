@@ -14,29 +14,29 @@ function AlbumDetail() {
   const [showMoreInfo, setShowMoreInfo] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
   
-  // User interactions
   const [userRating, setUserRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
   const [hasListened, setHasListened] = useState(false)
   const [reviewText, setReviewText] = useState('')
   const [modalRating, setModalRating] = useState(0)
   
-  // Album stats
   const [reviews, setReviews] = useState([])
   const [listenCount, setListenCount] = useState(0)
   const [averageRating, setAverageRating] = useState(0)
   
-  // Lyrics
   const [selectedTrack, setSelectedTrack] = useState(null)
   const [lyrics, setLyrics] = useState('')
   const [lyricsLoading, setLyricsLoading] = useState(false)
+
+  // New state for likes and comments
+  const [expandedComments, setExpandedComments] = useState({})
+  const [commentText, setCommentText] = useState({})
 
   useEffect(() => {
     fetchData()
   }, [id])
 
-  const fetchReviews = async () => {
-    // Fetch reviews without join
+  const fetchReviews = async (userId) => {
     const { data: reviewsData, error } = await supabase
       .from('reviews')
       .select('*')
@@ -49,46 +49,85 @@ function AlbumDetail() {
     }
 
     if (reviewsData && reviewsData.length > 0) {
-      // Fetch profiles separately for each review
-      const reviewsWithProfiles = await Promise.all(
+      const reviewsWithDetails = await Promise.all(
         reviewsData.map(async (review) => {
+          // Fetch profile
           const { data: profile } = await supabase
             .from('profiles')
             .select('username, avatar_url')
             .eq('id', review.user_id)
             .single()
-          return { ...review, profiles: profile }
+
+          // Fetch like count
+          const { count: likeCount } = await supabase
+            .from('review_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('review_id', review.id)
+
+          // Check if current user liked
+          let userLiked = false
+          if (userId) {
+            const { data: likeData } = await supabase
+              .from('review_likes')
+              .select('id')
+              .eq('review_id', review.id)
+              .eq('user_id', userId)
+              .maybeSingle()
+            userLiked = !!likeData
+          }
+
+          // Fetch comments
+          const { data: commentsData } = await supabase
+            .from('review_comments')
+            .select('*')
+            .eq('review_id', review.id)
+            .order('created_at', { ascending: true })
+
+          // Fetch profiles for comments
+          const commentsWithProfiles = await Promise.all(
+            (commentsData || []).map(async (comment) => {
+              const { data: commentProfile } = await supabase
+                .from('profiles')
+                .select('username, avatar_url')
+                .eq('id', comment.user_id)
+                .single()
+              return { ...comment, profiles: commentProfile }
+            })
+          )
+
+          return {
+            ...review,
+            profiles: profile,
+            likeCount: likeCount || 0,
+            userLiked,
+            comments: commentsWithProfiles
+          }
         })
       )
-      return reviewsWithProfiles
+      return reviewsWithDetails
     }
     return []
   }
 
-  // In your AlbumDetail.jsx, update the fetchData function to also fetch artist genres:
+  const fetchData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUser(user)
 
-const fetchData = async () => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    setCurrentUser(user)
-
-    const albumData = await spotifyService.getAlbum(id)
-    
-    // Fetch artist to get genres (albums often don't have genres)
-    if (albumData.artists?.[0]?.id) {
-      try {
-        const artistData = await spotifyService.getArtist(albumData.artists[0].id)
-        albumData.genres = artistData.genres || []
-      } catch (e) {
-        console.log('Could not fetch artist genres')
+      const albumData = await spotifyService.getAlbum(id)
+      
+      if (albumData.artists?.[0]?.id) {
+        try {
+          const artistData = await spotifyService.getArtist(albumData.artists[0].id)
+          albumData.genres = artistData.genres || []
+        } catch (e) {
+          console.log('Could not fetch artist genres')
+        }
       }
-    }
-    
-    setAlbum(albumData)
+      
+      setAlbum(albumData)
 
-    // ... rest of your fetchData code
-
-      const reviewsData = await fetchReviews()
+      const reviewsData = await fetchReviews(user?.id)
       setReviews(reviewsData)
       
       if (reviewsData.length > 0) {
@@ -122,11 +161,138 @@ const fetchData = async () => {
           setReviewText(userReview.review_text || '')
         }
       }
-
     } catch (error) {
       console.error('Error fetching album:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleLikeClick = async (reviewId) => {
+    if (!currentUser) {
+      alert('Please log in to like reviews')
+      return
+    }
+
+    const review = reviews.find(r => r.id === reviewId)
+    if (!review) return
+
+    if (review.userLiked) {
+      // Unlike
+      const { error } = await supabase
+        .from('review_likes')
+        .delete()
+        .eq('review_id', reviewId)
+        .eq('user_id', currentUser.id)
+
+      if (!error) {
+        setReviews(reviews.map(r => 
+          r.id === reviewId 
+            ? { ...r, userLiked: false, likeCount: r.likeCount - 1 }
+            : r
+        ))
+      }
+    } else {
+      // Like
+      const { error } = await supabase
+        .from('review_likes')
+        .insert({ review_id: reviewId, user_id: currentUser.id })
+
+      if (!error) {
+        setReviews(reviews.map(r => 
+          r.id === reviewId 
+            ? { ...r, userLiked: true, likeCount: r.likeCount + 1 }
+            : r
+        ))
+
+        // Send notification (don't notify yourself)
+        if (review.user_id !== currentUser.id) {
+          await supabase.from('notifications').insert({
+            user_id: review.user_id,
+            from_user_id: currentUser.id,
+            type: 'like',
+            review_id: reviewId,
+            album_id: id
+          })
+        }
+      }
+    }
+  }
+
+  const toggleComments = (reviewId) => {
+    setExpandedComments(prev => ({
+      ...prev,
+      [reviewId]: !prev[reviewId]
+    }))
+  }
+
+  const handleCommentSubmit = async (reviewId) => {
+    if (!currentUser) {
+      alert('Please log in to comment')
+      return
+    }
+
+    const text = commentText[reviewId]?.trim()
+    if (!text) return
+
+    const review = reviews.find(r => r.id === reviewId)
+
+    const { data, error } = await supabase
+      .from('review_comments')
+      .insert({
+        review_id: reviewId,
+        user_id: currentUser.id,
+        comment_text: text
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error posting comment:', error)
+      return
+    }
+
+    // Fetch the profile for the new comment
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('id', currentUser.id)
+      .single()
+
+    const newComment = { ...data, profiles: profile }
+
+    setReviews(reviews.map(r => 
+      r.id === reviewId 
+        ? { ...r, comments: [...r.comments, newComment] }
+        : r
+    ))
+    setCommentText(prev => ({ ...prev, [reviewId]: '' }))
+
+    // Send notification (don't notify yourself)
+    if (review && review.user_id !== currentUser.id) {
+      await supabase.from('notifications').insert({
+        user_id: review.user_id,
+        from_user_id: currentUser.id,
+        type: 'comment',
+        review_id: reviewId,
+        comment_text: text,
+        album_id: id
+      })
+    }
+  }
+
+  const handleDeleteComment = async (reviewId, commentId) => {
+    const { error } = await supabase
+      .from('review_comments')
+      .delete()
+      .eq('id', commentId)
+
+    if (!error) {
+      setReviews(reviews.map(r => 
+        r.id === reviewId 
+          ? { ...r, comments: r.comments.filter(c => c.id !== commentId) }
+          : r
+      ))
     }
   }
 
@@ -138,7 +304,6 @@ const fetchData = async () => {
 
     setUserRating(rating)
     
-    // Mark as listened if not already
     if (!hasListened) {
       const { error: listenError } = await supabase.from('listens').insert({
         user_id: currentUser.id,
@@ -151,7 +316,6 @@ const fetchData = async () => {
       }
     }
 
-    // Check if review exists
     const { data: existing } = await supabase
       .from('reviews')
       .select('id')
@@ -160,26 +324,16 @@ const fetchData = async () => {
       .maybeSingle()
 
     if (existing) {
-      // Update existing review
-      const { error } = await supabase
-        .from('reviews')
-        .update({ rating })
-        .eq('id', existing.id)
-      
-      if (error) console.error('Error updating rating:', error)
+      await supabase.from('reviews').update({ rating }).eq('id', existing.id)
     } else {
-      // Insert new review
-      const { error } = await supabase.from('reviews').insert({
+      await supabase.from('reviews').insert({
         user_id: currentUser.id,
         album_id: id,
         rating
       })
-      
-      if (error) console.error('Error inserting rating:', error)
     }
 
-    // Refresh reviews
-    const reviewsData = await fetchReviews()
+    const reviewsData = await fetchReviews(currentUser.id)
     setReviews(reviewsData)
     if (reviewsData.length > 0) {
       const avg = reviewsData.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsData.length
@@ -200,14 +354,11 @@ const fetchData = async () => {
         .eq('user_id', currentUser.id)
         .eq('album_id', id)
       
-      if (error) {
-        console.error('Error removing listen:', error)
-      } else {
+      if (!error) {
         setHasListened(false)
         setListenCount(prev => prev - 1)
       }
     } else {
-      // Check if already exists first
       const { data: existing } = await supabase
         .from('listens')
         .select('id')
@@ -216,7 +367,6 @@ const fetchData = async () => {
         .maybeSingle()
       
       if (existing) {
-        // Already listened, just update state
         setHasListened(true)
         return
       }
@@ -227,14 +377,7 @@ const fetchData = async () => {
         listened_at: new Date().toISOString()
       })
       
-      if (error) {
-        // If duplicate error, just set as listened
-        if (error.code === '23505' || error.code === '409') {
-          setHasListened(true)
-        } else {
-          console.error('Error adding listen:', error)
-        }
-      } else {
+      if (!error) {
         setHasListened(true)
         setListenCount(prev => prev + 1)
       }
@@ -252,22 +395,18 @@ const fetchData = async () => {
       return
     }
 
-    // Mark as listened if not already
     if (!hasListened) {
       const { error: listenError } = await supabase.from('listens').insert({
         user_id: currentUser.id,
         album_id: id,
         listened_at: new Date().toISOString()
       })
-      if (listenError) {
-        console.error('Error adding listen:', listenError)
-      } else {
+      if (!listenError) {
         setHasListened(true)
         setListenCount(prev => prev + 1)
       }
     }
 
-    // Check if review exists
     const { data: existing } = await supabase
       .from('reviews')
       .select('id')
@@ -276,38 +415,23 @@ const fetchData = async () => {
       .maybeSingle()
 
     if (existing) {
-      // Update existing review
-      const { error } = await supabase
+      await supabase
         .from('reviews')
         .update({ rating: modalRating, review_text: reviewText })
         .eq('id', existing.id)
-      
-      if (error) {
-        console.error('Error updating review:', error)
-        alert('Error updating review: ' + error.message)
-        return
-      }
     } else {
-      // Insert new review
-      const { error } = await supabase.from('reviews').insert({
+      await supabase.from('reviews').insert({
         user_id: currentUser.id,
         album_id: id,
         rating: modalRating,
         review_text: reviewText
       })
-      
-      if (error) {
-        console.error('Error inserting review:', error)
-        alert('Error saving review: ' + error.message)
-        return
-      }
     }
 
     setUserRating(modalRating)
     setShowReviewModal(false)
 
-    // Refresh reviews
-    const reviewsData = await fetchReviews()
+    const reviewsData = await fetchReviews(currentUser.id)
     setReviews(reviewsData)
     if (reviewsData.length > 0) {
       const avg = reviewsData.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsData.length
@@ -325,11 +449,7 @@ const fetchData = async () => {
     const fullStars = Math.floor(rating)
     for (let i = 0; i < 5; i++) {
       stars.push(
-        <span 
-          key={i} 
-          className={`review-star ${i < fullStars ? '' : 'empty'}`}
-          style={{ fontSize: size }}
-        >
+        <span key={i} className={`review-star ${i < fullStars ? '' : 'empty'}`} style={{ fontSize: size }}>
           ★
         </span>
       )
@@ -345,32 +465,19 @@ const fetchData = async () => {
     try {
       const artistName = album.artists?.[0]?.name || ''
       const result = await geniusService.findLyrics(track.name, artistName)
-      
-      if (result.lyrics) {
-        setLyrics(result.lyrics)
-      } else {
-        setLyrics('Lyrics not available for this track.')
-      }
+      setLyrics(result.lyrics || 'Lyrics not available for this track.')
     } catch (error) {
-      console.error('Lyrics error:', error)
       setLyrics('Failed to load lyrics.')
     } finally {
       setLyricsLoading(false)
     }
   }
 
-  if (loading) {
-    return <div className="album-detail-page"><p className="loading-text">loading album...</p></div>
-  }
-
-  if (!album) {
-    return <div className="album-detail-page"><p className="loading-text">album not found</p></div>
-  }
+  if (loading) return <div className="album-detail-page"><p className="loading-text">loading album...</p></div>
+  if (!album) return <div className="album-detail-page"><p className="loading-text">album not found</p></div>
 
   const releaseDate = new Date(album.release_date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+    year: 'numeric', month: 'long', day: 'numeric'
   })
 
   return (
@@ -378,11 +485,7 @@ const fetchData = async () => {
       <div className="album-detail-content">
         <div className="album-header">
           <div className="album-left">
-            <img 
-              src={album.images?.[0]?.url} 
-              alt={album.name} 
-              className="album-cover-large" 
-            />
+            <img src={album.images?.[0]?.url} alt={album.name} className="album-cover-large" />
             <h1 className="album-title">{album.name}</h1>
             <p className="album-artist">{album.artists?.map(a => a.name).join(', ')}</p>
           </div>
@@ -391,9 +494,9 @@ const fetchData = async () => {
             <div className="album-meta">
               <p className="meta-item"><span className="meta-label">release date:</span> {releaseDate}</p>
               <p className="meta-item"><span className="meta-label">format:</span> {album.album_type}</p>
-             {album.genres?.length > 0 && (
-  <p className="meta-item"><span className="meta-label">genres:</span> {album.genres.join(', ')}</p>
-)}
+              {album.genres?.length > 0 && (
+                <p className="meta-item"><span className="meta-label">genres:</span> {album.genres.join(', ')}</p>
+              )}
               <p className="meta-item"><span className="meta-label">label:</span> {album.label || 'N/A'}</p>
               <p className="meta-item"><span className="meta-label">tracks:</span> {album.total_tracks}</p>
             </div>
@@ -407,30 +510,16 @@ const fetchData = async () => {
                     onClick={() => handleRatingClick(star)}
                     onMouseEnter={() => setHoverRating(star)}
                     onMouseLeave={() => setHoverRating(0)}
-                  >
-                    ★
-                  </span>
+                  >★</span>
                 ))}
               </div>
-              <span 
-                className={`action-icon ${hasListened ? 'active' : ''}`}
-                onClick={handleListenClick}
-              >
-                🎧
-              </span>
-              <span 
-                className="action-icon"
-                onClick={openReviewModal}
-              >
-                ✎
-              </span>
+              <span className={`action-icon ${hasListened ? 'active' : ''}`} onClick={handleListenClick}>🎧</span>
+              <span className="action-icon" onClick={openReviewModal}>✎</span>
             </div>
 
             <div className="album-stats">
               <div className="stat-item">
-                <div className="stat-top">
-                  {renderStars(averageRating)}
-                </div>
+                <div className="stat-top">{renderStars(averageRating)}</div>
                 <p className="stat-label">☆ average rating</p>
               </div>
               <div className="stat-item">
@@ -458,11 +547,8 @@ const fetchData = async () => {
               <h3 className="tracklist-title">tracklist</h3>
               <ol className="track-list">
                 {album.tracks?.items?.map((track, index) => (
-                  <li 
-                    key={track.id} 
-                    className={`track-item ${selectedTrack?.id === track.id ? 'active' : ''}`}
-                    onClick={() => handleTrackClick(track)}
-                  >
+                  <li key={track.id} className={`track-item ${selectedTrack?.id === track.id ? 'active' : ''}`}
+                    onClick={() => handleTrackClick(track)}>
                     <span className="track-number">{index + 1}.</span>
                     <span className="track-name">{track.name}</span>
                   </li>
@@ -474,11 +560,7 @@ const fetchData = async () => {
               {selectedTrack ? (
                 <>
                   <h3 className="lyrics-title">lyrics from "{selectedTrack.name}"</h3>
-                  {lyricsLoading ? (
-                    <p className="lyrics-placeholder">loading lyrics...</p>
-                  ) : (
-                    <p className="lyrics-content">{lyrics}</p>
-                  )}
+                  {lyricsLoading ? <p className="lyrics-placeholder">loading lyrics...</p> : <p className="lyrics-content">{lyrics}</p>}
                 </>
               ) : (
                 <p className="lyrics-placeholder">select a track to view lyrics</p>
@@ -494,40 +576,102 @@ const fetchData = async () => {
           {reviews.length > 0 ? (
             reviews.map(review => (
               <div key={review.id} className="review-card">
+                {/* Row 1: User info and stars */}
                 <div className="review-header">
-                  <div 
-                    className="review-user"
-                    onClick={() => navigate(`/profile/${review.user_id}`)}
-                    style={{ cursor: 'pointer' }}
-                  >
+                  <div className="review-user" onClick={() => navigate(`/profile/${review.user_id}`)} style={{ cursor: 'pointer' }}>
                     {review.profiles?.avatar_url ? (
                       <img src={review.profiles.avatar_url} alt="" className="review-avatar" />
                     ) : (
                       <div className="review-avatar" />
                     )}
-                    <span className="review-username">
-                      {review.profiles?.username || 'User'}
-                    </span>
+                    <span className="review-username">{review.profiles?.username || 'User'}</span>
                   </div>
-                  <div className="review-stars">
-                    {renderStars(review.rating || 0)}
-                  </div>
+                  <div className="review-stars">{renderStars(review.rating || 0)}</div>
                 </div>
+
+                {/* Row 2: Review text */}
                 {review.review_text && (
                   <p className="review-text">{review.review_text}</p>
                 )}
-                {currentUser?.id === review.user_id && (
-                  <div className="review-actions">
+
+                {/* Row 3: Like, Comment, Edit */}
+                <div className="review-footer">
+                  <div className="review-interactions">
                     <button 
-                      className="edit-review-btn"
-                      onClick={() => {
-                        setModalRating(review.rating || 0)
-                        setReviewText(review.review_text || '')
-                        setShowReviewModal(true)
-                      }}
+                      className={`interaction-btn like-btn ${review.userLiked ? 'liked' : ''}`}
+                      onClick={() => handleLikeClick(review.id)}
                     >
-                      edit review
+                      <span className="interaction-icon">{review.userLiked ? '♥' : '♡'}</span>
+                      <span className="interaction-count">{review.likeCount}</span>
                     </button>
+                    <button 
+                      className="interaction-btn comment-btn"
+                      onClick={() => toggleComments(review.id)}
+                    >
+                      <span className="interaction-icon">💬</span>
+                      <span className="interaction-count">{review.comments?.length || 0}</span>
+                    </button>
+                  </div>
+                  {currentUser?.id === review.user_id && (
+                    <button className="edit-review-btn" onClick={() => {
+                      setModalRating(review.rating || 0)
+                      setReviewText(review.review_text || '')
+                      setShowReviewModal(true)
+                    }}>edit review</button>
+                  )}
+                </div>
+
+                {/* Row 4: Comments (expandable) */}
+                {expandedComments[review.id] && (
+                  <div className="comments-section">
+                    {review.comments?.length > 0 && (
+                      <div className="comments-list">
+                        {review.comments.map(comment => (
+                          <div key={comment.id} className="comment-item">
+                            <div 
+                              className="comment-user"
+                              onClick={() => navigate(`/profile/${comment.user_id}`)}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {comment.profiles?.avatar_url ? (
+                                <img src={comment.profiles.avatar_url} alt="" className="comment-avatar" />
+                              ) : (
+                                <div className="comment-avatar" />
+                              )}
+                              <span className="comment-username">{comment.profiles?.username || 'User'}</span>
+                            </div>
+                            <p className="comment-text">{comment.comment_text}</p>
+                            {currentUser?.id === comment.user_id && (
+                              <button 
+                                className="delete-comment-btn"
+                                onClick={() => handleDeleteComment(review.id, comment.id)}
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {currentUser && (
+                      <div className="comment-input-wrapper">
+                        <input
+                          type="text"
+                          className="comment-input"
+                          placeholder="Write a comment..."
+                          value={commentText[review.id] || ''}
+                          onChange={(e) => setCommentText(prev => ({ ...prev, [review.id]: e.target.value }))}
+                          onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(review.id)}
+                        />
+                        <button 
+                          className="comment-submit-btn"
+                          onClick={() => handleCommentSubmit(review.id)}
+                        >
+                          post
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -542,33 +686,21 @@ const fetchData = async () => {
         <div className="modal-overlay" onClick={() => setShowReviewModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2 className="modal-title">write a review</h2>
-            
             <div className="modal-rating">
               {[1, 2, 3, 4, 5].map(star => (
-                <span
-                  key={star}
-                  className={`modal-star ${star <= modalRating ? 'active' : ''}`}
-                  onClick={() => setModalRating(star)}
-                >
-                  ★
-                </span>
+                <span key={star} className={`modal-star ${star <= modalRating ? 'active' : ''}`}
+                  onClick={() => setModalRating(star)}>★</span>
               ))}
             </div>
-
             <textarea
               className="modal-textarea"
               placeholder="Write your review here..."
               value={reviewText}
               onChange={e => setReviewText(e.target.value)}
             />
-
             <div className="modal-buttons">
-              <button className="modal-btn cancel" onClick={() => setShowReviewModal(false)}>
-                cancel
-              </button>
-              <button className="modal-btn save" onClick={handleSubmitReview}>
-                submit
-              </button>
+              <button className="modal-btn cancel" onClick={() => setShowReviewModal(false)}>cancel</button>
+              <button className="modal-btn save" onClick={handleSubmitReview}>submit</button>
             </div>
           </div>
         </div>

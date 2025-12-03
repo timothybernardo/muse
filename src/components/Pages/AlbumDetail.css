@@ -243,10 +243,6 @@
   border-radius: 4px;
 }
 
-.lyrics-box::-webkit-scrollbar-thumb:hover {
-  background: #e8dcc8;
-}
-
 .lyrics-title {
   font-size: 14px;
   font-weight: bold;
@@ -286,56 +282,55 @@
   margin-bottom: 25px;
 }
 
-/* FIXED: Review Card Layout */
+/* Review Card - FORCE VERTICAL LAYOUT */
 .review-card {
+  display: flex !important;
+  flex-direction: column !important;
   background-color: #7b4739;
-  border-radius: 15px;
-  padding: 25px;
-  margin-bottom: 20px;
-}
-
-.review-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  border-radius: 12px;
+  padding: 18px 20px;
   margin-bottom: 15px;
 }
 
+.review-header {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 10px !important;
+  width: 100% !important;
+}
+
 .review-user {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
 }
 
 .review-avatar {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
   background-color: #5a4a3f;
+  flex-shrink: 0;
 }
 
 .review-username {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: bold;
   color: #f5f5f5;
 }
 
-.review-count {
-  font-size: 14px;
-  color: #c4b8a8;
-  margin-left: 10px;
-  font-weight: normal;
-}
-
-/* Stars on the right */
 .review-stars {
-  display: flex;
-  gap: 3px;
+  display: flex !important;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
 .review-star {
-  font-size: 20px;
+  font-size: 16px;
   color: #d4a574;
 }
 
@@ -343,29 +338,196 @@
   color: #5a4a3f;
 }
 
-/* Review text below header */
 .review-text {
-  font-size: 14px;
+  display: block !important;
+  width: 100% !important;
+  font-size: 13px;
   color: #e8dcc8;
-  line-height: 1.6;
+  line-height: 1.5;
+  margin: 0 0 12px 0 !important;
 }
 
-/* Edit button bottom right */
-.review-actions {
+/* Review Footer - Like/Comment + Edit */
+.review-footer {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding-top: 12px;
+  border-top: 1px solid #5a3a30;
+  width: 100% !important;
+  margin-top: auto;
+}
+
+/* Review Interactions (Likes & Comments) */
+.review-interactions {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 15px;
+}
+
+.interaction-btn {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 15px;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: #c4b8a8;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.2s;
 }
 
+.interaction-btn:hover {
+  color: #f5f5f5;
+}
+
+.interaction-icon {
+  font-size: 15px;
+}
+
+.like-btn.liked {
+  color: #e85d75;
+}
+
+.like-btn.liked .interaction-icon {
+  color: #e85d75;
+}
+
+.interaction-count {
+  font-size: 13px;
+}
+
+/* Comments Section */
+.comments-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #5a3a30;
+}
+
+.comments-list {
+  margin-bottom: 15px;
+}
+
+.comment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  position: relative;
+}
+
+.comment-item:not(:last-child) {
+  border-bottom: 1px solid #5a3a30;
+}
+
+.comment-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #5a4a3f;
+}
+
+.comment-username {
+  font-size: 13px;
+  font-weight: bold;
+  color: #f5f5f5;
+}
+
+.comment-text {
+  font-size: 13px;
+  color: #e8dcc8;
+  line-height: 1.4;
+  flex: 1;
+  margin: 0;
+  padding-top: 4px;
+}
+
+.delete-comment-btn {
+  position: absolute;
+  right: 0;
+  top: 10px;
+  background: none;
+  border: none;
+  color: #8a7a6a;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.comment-item:hover .delete-comment-btn {
+  opacity: 1;
+}
+
+.delete-comment-btn:hover {
+  color: #e85d75;
+}
+
+/* Comment Input */
+.comment-input-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.comment-input {
+  flex: 1;
+  padding: 10px 15px;
+  border-radius: 20px;
+  border: none;
+  background-color: #4a3028;
+  color: #f5f5f5;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.comment-input::placeholder {
+  color: #8a7a6a;
+}
+
+.comment-input:focus {
+  outline: none;
+  background-color: #5a3a30;
+}
+
+.comment-submit-btn {
+  padding: 8px 16px;
+  border-radius: 15px;
+  border: none;
+  background-color: #d4c4a8;
+  color: #2b1a00;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.comment-submit-btn:hover {
+  background-color: #e8dcc8;
+}
+
+/* Edit button */
 .edit-review-btn {
   background: none;
   border: 1px solid #8a7a6a;
   color: #8a7a6a;
-  padding: 4px 12px;
+  padding: 5px 12px;
   border-radius: 12px;
   font-size: 11px;
   cursor: pointer;
   font-family: inherit;
+  transition: all 0.2s;
 }
 
 .edit-review-btn:hover {
@@ -432,6 +594,7 @@
   resize: vertical;
   min-height: 150px;
   margin-bottom: 20px;
+  box-sizing: border-box;
 }
 
 .modal-textarea::placeholder {
@@ -469,40 +632,4 @@
   color: #c4b8a8;
   text-align: center;
   padding: 40px;
-}
-
-/* Force correct review layout */
-.review-card {
-  display: block !important;
-}
-
-.review-header {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-  margin-bottom: 15px !important;
-}
-
-.review-user {
-  display: flex !important;
-  align-items: center !important;
-  gap: 15px !important;
-}
-
-.review-stars {
-  margin-left: auto !important;
-}
-
-.review-text {
-  display: block !important;
-  width: 100% !important;
-}
-
-.review-actions {
-  display: flex !important;
-  justify-content: flex-end !important;
-  width: 100% !important;
-  margin-top: 15px !important;
 }

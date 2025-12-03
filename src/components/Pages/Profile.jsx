@@ -42,24 +42,16 @@ function Profile() {
   const [reviewText, setReviewText] = useState('')
 
   useEffect(() => {
-  // Reset all state when userId changes
-  setProfile(null)
-  setReviews([])
-  setRecentlyListened([])
-  setPlaylists([])
-  setFavoriteAlbums([])
-  setStats({
-    albumsListened: 0,
-    averageRating: 0,
-    playlistCount: 0,
-    followersCount: 0,
-    followingCount: 0
-  })
-  setIsFollowing(false)
-  setLoading(true)
-  
-  fetchData()
-}, [userId])
+    setProfile(null)
+    setReviews([])
+    setRecentlyListened([])
+    setPlaylists([])
+    setFavoriteAlbums([])
+    setStats({ albumsListened: 0, averageRating: 0, playlistCount: 0, followersCount: 0, followingCount: 0 })
+    setIsFollowing(false)
+    setLoading(true)
+    fetchData()
+  }, [userId])
 
   const fetchData = async () => {
     try {
@@ -205,12 +197,28 @@ function Profile() {
   const handleFollowClick = async () => {
     if (!currentUser) { alert('Please log in to follow users'); return }
     const profileId = userId || profile?.id
+    
     if (isFollowing) {
+      // Unfollow
       const { error } = await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', profileId)
-      if (!error) { setIsFollowing(false); setStats(prev => ({ ...prev, followersCount: prev.followersCount - 1 })) }
+      if (!error) { 
+        setIsFollowing(false)
+        setStats(prev => ({ ...prev, followersCount: prev.followersCount - 1 }))
+      }
     } else {
+      // Follow
       const { error } = await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: profileId })
-      if (!error) { setIsFollowing(true); setStats(prev => ({ ...prev, followersCount: prev.followersCount + 1 })) }
+      if (!error) { 
+        setIsFollowing(true)
+        setStats(prev => ({ ...prev, followersCount: prev.followersCount + 1 }))
+        
+        // Send follow notification
+        await supabase.from('notifications').insert({
+          user_id: profileId,
+          from_user_id: currentUser.id,
+          type: 'follow'
+        })
+      }
     }
   }
 
@@ -240,7 +248,6 @@ function Profile() {
 
   return (
     <div className="profile-page">
-      {/* Profile Header */}
       <div className="profile-header">
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt="Avatar" className="profile-avatar" />
@@ -251,18 +258,12 @@ function Profile() {
         <div className="profile-info">
           <h1 className="profile-username">{profile?.username || 'User'}</h1>
           <div className="profile-follow-stats">
-            <span 
-    onClick={() => { setFollowsTab('followers'); setShowFollowsModal(true) }}
-    style={{ cursor: 'pointer' }}
-  >
-    <strong>{stats.followersCount}</strong> followers
-  </span>
-            <span 
-    onClick={() => { setFollowsTab('following'); setShowFollowsModal(true) }}
-    style={{ cursor: 'pointer' }}
-  >
-    <strong>{stats.followingCount}</strong> following
-  </span>
+            <span onClick={() => { setFollowsTab('followers'); setShowFollowsModal(true) }} style={{ cursor: 'pointer' }}>
+              <strong>{stats.followersCount}</strong> followers
+            </span>
+            <span onClick={() => { setFollowsTab('following'); setShowFollowsModal(true) }} style={{ cursor: 'pointer' }}>
+              <strong>{stats.followingCount}</strong> following
+            </span>
           </div>
           {profile?.bio && <p className="profile-bio">{profile.bio}</p>}
         </div>
@@ -283,7 +284,6 @@ function Profile() {
         </div>
       </div>
 
-      {/* Action Buttons */}
       {isOwnProfile ? (
         <div className="profile-actions">
           <button className="action-btn" onClick={() => navigate('/albums')}>post review</button>
@@ -298,7 +298,6 @@ function Profile() {
         </div>
       )}
 
-      {/* Favorite Albums */}
       <div className="profile-section">
         <div className="section-header">
           <h2 className="section-title">favorite albums</h2>
@@ -321,7 +320,6 @@ function Profile() {
         </div>
       </div>
 
-      {/* Recently Listened */}
       <div className="profile-section">
         <h2 className="section-title">recently listened</h2>
         <div className="section-line"></div>
@@ -338,7 +336,6 @@ function Profile() {
         </div>
       </div>
 
-      {/* Reviews */}
       <div className="profile-section">
         <h2 className="section-title">reviews</h2>
         <div className="section-line"></div>
@@ -363,7 +360,6 @@ function Profile() {
         </div>
       </div>
 
-      {/* Playlists */}
       <div className="profile-section">
         <h2 className="section-title">playlists</h2>
         <div className="section-line"></div>
@@ -381,7 +377,6 @@ function Profile() {
         )) : <p className="empty-text">No playlists yet</p>}
       </div>
 
-      {/* Edit Profile Modal */}
       {showEditModal && (
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -401,7 +396,6 @@ function Profile() {
         </div>
       )}
 
-      {/* Add Favorite Album Modal */}
       {showFavoritesModal && (
         <div className="modal-overlay" onClick={() => setShowFavoritesModal(false)}>
           <div className="modal-content fav-modal" onClick={(e) => e.stopPropagation()}>
@@ -426,7 +420,6 @@ function Profile() {
         </div>
       )}
 
-      {/* Edit Review Modal */}
       {showReviewModal && (
         <div className="modal-overlay" onClick={() => setShowReviewModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -452,13 +445,14 @@ function Profile() {
           </div>
         </div>
       )}
+
       {showFollowsModal && (
-  <FollowsModal 
-    userId={userId || currentUser?.id}
-    initialTab={followsTab}
-    onClose={() => setShowFollowsModal(false)}
-  />
-)}
+        <FollowsModal 
+          userId={userId || currentUser?.id}
+          initialTab={followsTab}
+          onClose={() => setShowFollowsModal(false)}
+        />
+      )}
     </div>
   )
 }
