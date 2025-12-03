@@ -1,9 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase, authService } from './services/supabase'
+import { spotifyService } from './services/spotify'
 import "./styles/App.css";
 
-// Import components (we'll create these next)
+// Import components
 import Login from './components/Auth/Login'
 import SignUp from './components/Auth/SignUp'
 import Home from './components/Pages/Home'
@@ -26,11 +27,21 @@ function App() {
     authService.getSession().then(session => {
       setUser(session?.user ?? null)
       setLoading(false)
+      
+      // Prefetch Spotify data if already logged in
+      if (session?.user) {
+        spotifyService.prefetch()
+      }
     })
 
     // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
+      
+      // Prefetch when user logs in
+      if (event === 'SIGNED_IN' && session) {
+        spotifyService.prefetch()
+      }
     })
 
     return () => {
