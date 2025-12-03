@@ -57,7 +57,7 @@ function Home() {
         const uniqueAlbumIds = [...new Set(recentListens.map(l => l.album_id))]
         
         const albums = await Promise.all(
-          uniqueAlbumIds.slice(0, 6).map(async (albumId) => {
+          uniqueAlbumIds.slice(0, 5).map(async (albumId) => {
             try {
               return await spotifyService.getAlbum(albumId)
             } catch (e) {
