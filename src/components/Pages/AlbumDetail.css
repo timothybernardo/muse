@@ -290,6 +290,12 @@
   border-radius: 12px;
   padding: 18px 20px;
   margin-bottom: 15px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.review-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .review-header {
@@ -607,12 +613,18 @@
   margin-bottom: 20px;
 }
 
+.input-wrapper .modal-textarea {
+  margin-bottom: 0;
+  resize: none;
+}
+
 .char-count {
   position: absolute;
-  bottom: 8px;
-  right: 15px;
+  bottom: 10px;
+  right: 12px;
   font-size: 11px;
   color: #a89a8a;
+  pointer-events: none;
 }
 
 .modal-buttons {
@@ -633,12 +645,30 @@
   background-color: #d4c4a8;
   color: #2b1a00;
   border: none;
+  transition: transform 0.1s ease, background-color 0.2s;
+}
+
+.modal-btn.save:hover {
+  background-color: #e8dcc8;
+}
+
+.modal-btn.save:active {
+  transform: scale(0.96);
 }
 
 .modal-btn.cancel {
   background-color: transparent;
   color: #f5f5f5;
   border: 1px solid #f5f5f5;
+  transition: transform 0.1s ease, background-color 0.2s;
+}
+
+.modal-btn.cancel:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-btn.cancel:active {
+  transform: scale(0.96);
 }
 
 /* Loading */
@@ -646,28 +676,4 @@
   color: #c4b8a8;
   text-align: center;
   padding: 40px;
-}
-
-.input-wrapper {
-  position: relative;
-  margin-bottom: 15px;
-}
-
-.input-wrapper .modal-input {
-  margin-bottom: 0;
-  padding-right: 50px;
-}
-
-.input-wrapper .modal-textarea {
-  margin-bottom: 0;
-  resize: none;
-}
-
-.char-count {
-  position: absolute;
-  bottom: 10px;
-  right: 12px;
-  font-size: 11px;
-  color: #a89a8a;
-  pointer-events: none;
 }

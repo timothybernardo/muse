@@ -34,12 +34,14 @@
   padding: 15px;
   border-radius: 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.2s ease, box-shadow 0.2s ease;
   background-color: transparent;
 }
 
 .playlist-card:hover {
   background-color: #3d2814;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* Header with name and description */
@@ -67,11 +69,10 @@
   font-size: 14px;
   font-style: italic;
   color: #c4b8a8;
+  max-width: 400px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
 }
 
 /* Content row - albums left, user far right */
@@ -186,12 +187,23 @@
   margin-bottom: 15px;
 }
 
+.input-wrapper .modal-input {
+  margin-bottom: 0;
+  padding-right: 50px;
+}
+
+.input-wrapper .modal-textarea {
+  margin-bottom: 0;
+  resize: none;
+}
+
 .char-count {
   position: absolute;
-  bottom: 8px;
-  right: 15px;
+  bottom: 10px;
+  right: 12px;
   font-size: 11px;
   color: #a89a8a;
+  pointer-events: none;
 }
 
 .modal-input {
@@ -270,28 +282,4 @@
   text-align: center;
   padding: 40px;
   font-style: italic;
-}
-
-.input-wrapper {
-  position: relative;
-  margin-bottom: 15px;
-}
-
-.input-wrapper .modal-input {
-  margin-bottom: 0;
-  padding-right: 50px;
-}
-
-.input-wrapper .modal-textarea {
-  margin-bottom: 0;
-  resize: none;
-}
-
-.char-count {
-  position: absolute;
-  bottom: 10px;
-  right: 12px;
-  font-size: 11px;
-  color: #a89a8a;
-  pointer-events: none;
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { spotifyService } from '../../services/spotify'
+import { AlbumCardSkeleton } from '../../components/Skeleton'
 import './Albums.css'
 
 function Albums() {
@@ -34,7 +35,6 @@ function Albums() {
           .single()
         setProfile(data)
 
-        // Check if user follows anyone
         const { data: following } = await supabase
           .from('follows')
           .select('following_id')
@@ -44,7 +44,6 @@ function Albums() {
           setHasFollowing(true)
           followingIds = following.map(f => f.following_id)
           
-          // REVIEWED BY PEOPLE YOU FOLLOW
           const { data: followingReviewsData } = await supabase
             .from('reviews')
             .select('album_id')
@@ -67,7 +66,6 @@ function Albums() {
           }
         }
 
-        // USERS TO FOLLOW (if not following anyone)
         if (!following || following.length === 0) {
           const { data: activeUsers } = await supabase
             .from('profiles')
@@ -76,7 +74,6 @@ function Albums() {
             .limit(10)
 
           if (activeUsers) {
-            // Get review counts for each user
             const usersWithStats = await Promise.all(
               activeUsers.map(async (u) => {
                 const { count } = await supabase
@@ -86,7 +83,6 @@ function Albums() {
                 return { ...u, reviewCount: count || 0 }
               })
             )
-            // Sort by most reviews and take top 5
             setUsersToFollow(
               usersWithStats
                 .filter(u => u.reviewCount > 0)
@@ -97,7 +93,6 @@ function Albums() {
         }
       }
 
-      // RECENTLY REVIEWED BY ALL USERS
       const { data: recentReviews } = await supabase
         .from('reviews')
         .select('album_id')
@@ -118,19 +113,16 @@ function Albums() {
         setRecentlyReviewed(reviewedAlbums.filter(a => a !== null))
       }
 
-      // POPULAR ON MUSE (most listens)
       const { data: popularListens } = await supabase
         .from('listens')
         .select('album_id')
       
       if (popularListens && popularListens.length > 0) {
-        // Count listens per album
         const listenCounts = {}
         popularListens.forEach(l => {
           listenCounts[l.album_id] = (listenCounts[l.album_id] || 0) + 1
         })
         
-        // Sort by count and get top albums
         const sortedAlbumIds = Object.entries(listenCounts)
           .sort((a, b) => b[1] - a[1])
           .slice(0, 15)
@@ -148,13 +140,11 @@ function Albums() {
         setPopularOnMuse(popularAlbums.filter(a => a !== null))
       }
 
-      // HIGHLY RATED (average rating >= 4)
       const { data: allReviews } = await supabase
         .from('reviews')
         .select('album_id, rating')
       
       if (allReviews && allReviews.length > 0) {
-        // Calculate average rating per album
         const albumRatings = {}
         allReviews.forEach(r => {
           if (!albumRatings[r.album_id]) {
@@ -164,7 +154,6 @@ function Albums() {
           albumRatings[r.album_id].count += 1
         })
         
-        // Get albums with avg >= 4 and at least 1 review
         const highlyRatedIds = Object.entries(albumRatings)
           .map(([id, data]) => ({ id, avg: data.total / data.count, count: data.count }))
           .filter(a => a.avg >= 4)
@@ -184,7 +173,6 @@ function Albums() {
         setHighlyRated(ratedAlbums.filter(a => a !== null))
       }
 
-      // DISCOVER NEW MUSIC - Spotify's new releases
       try {
         const newReleases = await spotifyService.getNewReleases(20)
         setDiscoverAlbums(newReleases.slice(0, 15))
@@ -192,7 +180,6 @@ function Albums() {
         console.error('Error fetching new releases:', e)
       }
 
-      // Fetch stats for all albums
       const allAlbumIds = [
         ...(recentReviews?.map(r => r.album_id) || []),
         ...popularOnMuse.map(a => a?.id).filter(Boolean),
@@ -261,7 +248,7 @@ function Albums() {
     const coverImage = album.images?.[0]?.url || album.cover
 
     return (
-      <div className="album-card" onClick={() => navigate(`/album/${album.id}`)}>
+      <div className="album-card hover-lift" onClick={() => navigate(`/album/${album.id}`)}>
         <img src={coverImage} alt={album.name} className="album-cover" />
         <div className="album-stats">
           <span className="album-stat">🎧 {formatListens(stats.listens)}</span>
@@ -273,7 +260,7 @@ function Albums() {
   }
 
   const UserCard = ({ user }) => (
-    <div className="user-card" onClick={() => navigate(`/profile/${user.id}`)}>
+    <div className="user-card hover-lift" onClick={() => navigate(`/profile/${user.id}`)}>
       {user.avatar_url ? (
         <img src={user.avatar_url} alt={user.username} className="user-card-avatar" />
       ) : (
@@ -300,22 +287,22 @@ function Albums() {
     const visibleAlbums = albums.slice(scrollIndex, scrollIndex + visibleCount)
 
     return (
-      <div className="albums-section">
+      <div className="albums-section fade-in">
         <h2 className="section-title">{title}</h2>
         <div className="section-line"></div>
         <div className="albums-grid-container">
           {scrollIndex > 0 && (
-            <button className="carousel-btn prev" onClick={handlePrev}>
+            <button className="carousel-btn prev btn-press" onClick={handlePrev}>
               ‹
             </button>
           )}
-          <div className="albums-grid">
+          <div className="albums-grid stagger-fade">
             {visibleAlbums.map(album => (
               <AlbumCard key={album.id} album={album} />
             ))}
           </div>
           {scrollIndex < maxIndex && (
-            <button className="carousel-btn" onClick={handleNext}>
+            <button className="carousel-btn btn-press" onClick={handleNext}>
               ›
             </button>
           )}
@@ -324,28 +311,48 @@ function Albums() {
     )
   }
 
+  const AlbumSectionSkeleton = () => (
+    <div className="albums-section">
+      <div className="skeleton skeleton-text-lg" style={{ width: '200px', marginBottom: '10px' }} />
+      <div className="section-line"></div>
+      <div className="albums-grid-container">
+        <div className="albums-grid">
+          <AlbumCardSkeleton />
+          <AlbumCardSkeleton />
+          <AlbumCardSkeleton />
+          <AlbumCardSkeleton />
+          <AlbumCardSkeleton />
+        </div>
+      </div>
+    </div>
+  )
+
   if (loading) {
     return (
       <div className="albums-page">
-        <p className="loading-text">loading albums...</p>
+        <div className="albums-header">
+          <div className="skeleton skeleton-title" style={{ width: '300px' }} />
+        </div>
+        <AlbumSectionSkeleton />
+        <AlbumSectionSkeleton />
+        <AlbumSectionSkeleton />
       </div>
     )
   }
 
   return (
-    <div className="albums-page">
+    <div className="albums-page page-transition">
       <div className="albums-header">
         <h1 className="albums-greeting">
           start spinning, <span className="username">{profile?.username || 'user'}</span>
         </h1>
       </div>
 
-      {/* Show users to follow if not following anyone */}
       {!hasFollowing && usersToFollow.length > 0 && (
-        <div className="albums-section">
+        <div className="albums-section fade-in">
           <h2 className="section-title">users to follow</h2>
           <div className="section-line"></div>
-          <div className="users-grid">
+          <div className="users-grid stagger-fade">
             {usersToFollow.map(user => (
               <UserCard key={user.id} user={user} />
             ))}
@@ -374,7 +381,7 @@ function Albums() {
       )}
 
       {recentlyReviewed.length === 0 && discoverAlbums.length === 0 && (
-        <p className="loading-text">No albums yet. Use search to find albums to review!</p>
+        <p className="loading-text">no albums yet. use search to find albums to review!</p>
       )}
     </div>
   )

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { spotifyService } from '../../services/spotify'
 import { geniusService } from '../../services/genius'
+import { AlbumDetailSkeleton, ReviewCardSkeleton } from '../../components/Skeleton'
 import './AlbumDetail.css'
 
 // Character limits
@@ -478,7 +479,21 @@ function AlbumDetail() {
     }
   }
 
-  if (loading) return <div className="album-detail-page"><p className="loading-text">loading album...</p></div>
+  if (loading) {
+    return (
+      <div className="album-detail-page">
+        <div className="album-detail-content">
+          <AlbumDetailSkeleton />
+          <div style={{ marginTop: '60px' }}>
+            <div className="skeleton skeleton-text" style={{ width: '150px', marginBottom: '25px' }} />
+            <ReviewCardSkeleton />
+            <ReviewCardSkeleton />
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
   if (!album) return <div className="album-detail-page"><p className="loading-text">album not found</p></div>
 
   const releaseDate = new Date(album.release_date).toLocaleDateString('en-US', {
@@ -486,7 +501,7 @@ function AlbumDetail() {
   })
 
   return (
-    <div className="album-detail-page">
+    <div className="album-detail-page page-transition">
       <div className="album-detail-content">
         <div className="album-header">
           <div className="album-left">

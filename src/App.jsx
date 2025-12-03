@@ -15,6 +15,7 @@ import PlaylistDetail from './components/Pages/PlaylistDetail'
 import Search from './components/Pages/Search'
 import Find from './components/Pages/Find'
 import Navbar from './components/Layout/Navbar'
+import './components/Skeleton.css'
 
 function App() {
   const [user, setUser] = useState(null)

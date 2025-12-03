@@ -227,3 +227,55 @@
   font-size: 13px;
   color: #c4b8a8;
 }
+
+/* Add these to your Albums.css */
+
+/* Hover lift effect for album cards */
+.album-card.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.album-card.hover-lift:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Hover lift for user cards */
+.user-card.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-card.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+/* Button press animation */
+.carousel-btn.btn-press {
+  transition: transform 0.1s ease, color 0.2s;
+}
+
+.carousel-btn.btn-press:active {
+  transform: scale(0.9);
+}
+
+/* Skeleton album card grid */
+.albums-grid .skeleton-album-card {
+  width: 180px;
+}
+
+/* Fade in sections */
+.albums-section.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

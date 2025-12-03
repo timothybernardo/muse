@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { spotifyService } from '../../services/spotify'
+import { AlbumCardSkeleton, PlaylistCardSkeleton } from '../../components/Skeleton'
 import './Search.css'
 
 function Search() {
@@ -24,22 +25,16 @@ function Search() {
         const albums = await spotifyService.searchAlbums(searchQuery, 20)
         setResults(albums)
       } else if (activeTab === 'playlists') {
-        console.log('searching playlists for:', searchQuery)
-        
         const { data, error } = await supabase
           .from('playlists')
           .select('*')
           .ilike('title', `%${searchQuery}%`)
           .limit(20)
         
-        console.log('Playlist results:', data)
-        console.log('Playlist error:', error)
-        
         if (error) {
           console.error('Playlist search error:', error)
         }
         
-        // Fetch creator profiles and songs separately
         if (data && data.length > 0) {
           const playlistsWithData = await Promise.all(
             data.map(async (playlist) => {
@@ -91,11 +86,11 @@ function Search() {
   }
 
   const renderAlbumResults = () => (
-    <div className="results-grid albums-grid">
+    <div className="results-grid albums-grid stagger-fade">
       {results.map(album => (
         <div 
           key={album.id} 
-          className="album-card"
+          className="album-card hover-lift"
           onClick={() => navigate(`/album/${album.id}`)}
         >
           <img 
@@ -111,11 +106,11 @@ function Search() {
   )
 
   const renderPlaylistResults = () => (
-    <div className="results-grid playlists-grid">
+    <div className="results-grid playlists-grid stagger-fade">
       {results.map(playlist => (
         <div 
           key={playlist.id} 
-          className="playlist-card"
+          className="playlist-card hover-lift"
           onClick={() => navigate(`/playlist/${playlist.id}`)}
         >
           <div className="playlist-covers">
@@ -143,11 +138,11 @@ function Search() {
   )
 
   const renderUserResults = () => (
-    <div className="results-grid users-grid">
+    <div className="results-grid users-grid stagger-fade">
       {results.map(user => (
         <div 
           key={user.id} 
-          className="user-card"
+          className="user-card hover-lift"
           onClick={() => navigate(`/profile/${user.id}`)}
         >
           {user.avatar_url ? (
@@ -162,17 +157,45 @@ function Search() {
     </div>
   )
 
+  const renderSkeletons = () => {
+    if (activeTab === 'albums') {
+      return (
+        <div className="results-grid albums-grid">
+          {[...Array(8)].map((_, i) => <AlbumCardSkeleton key={i} />)}
+        </div>
+      )
+    } else if (activeTab === 'playlists') {
+      return (
+        <div className="results-grid playlists-grid">
+          {[...Array(4)].map((_, i) => <PlaylistCardSkeleton key={i} />)}
+        </div>
+      )
+    } else {
+      return (
+        <div className="results-grid users-grid">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="skeleton-user-card">
+              <div className="skeleton skeleton-circle" style={{ width: '80px', height: '80px', marginBottom: '10px' }} />
+              <div className="skeleton skeleton-text" style={{ width: '100px' }} />
+              <div className="skeleton skeleton-text-sm" style={{ width: '80px' }} />
+            </div>
+          ))}
+        </div>
+      )
+    }
+  }
+
   const renderResults = () => {
     if (loading) {
-      return <p className="loading-text">Searching...</p>
+      return renderSkeletons()
     }
 
     if (!hasSearched) {
-      return <p className="empty-text">Search for {activeTab}</p>
+      return <p className="empty-text">search for {activeTab}</p>
     }
 
     if (results.length === 0) {
-      return <p className="empty-text">No {activeTab} found for "{searchQuery}"</p>
+      return <p className="empty-text">no {activeTab} found for "{searchQuery}"</p>
     }
 
     switch (activeTab) {
@@ -188,33 +211,31 @@ function Search() {
   }
 
   return (
-    <div className="search-page">
+    <div className="search-page page-transition">
       <div className="search-content">
         <h1 className="search-title">search</h1>
 
-        {/* Tabs */}
         <div className="search-tabs">
           <button 
-            className={`tab-btn ${activeTab === 'albums' ? 'active' : ''}`}
+            className={`tab-btn btn-press ${activeTab === 'albums' ? 'active' : ''}`}
             onClick={() => handleTabChange('albums')}
           >
             albums
           </button>
           <button 
-            className={`tab-btn ${activeTab === 'playlists' ? 'active' : ''}`}
+            className={`tab-btn btn-press ${activeTab === 'playlists' ? 'active' : ''}`}
             onClick={() => handleTabChange('playlists')}
           >
             playlists
           </button>
           <button 
-            className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
+            className={`tab-btn btn-press ${activeTab === 'users' ? 'active' : ''}`}
             onClick={() => handleTabChange('users')}
           >
             users
           </button>
         </div>
 
-        {/* Search Bar */}
         <div className="search-bar">
           <input
             type="text"
@@ -224,12 +245,11 @@ function Search() {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleKeyPress}
           />
-          <button className="search-btn" onClick={handleSearch} disabled={loading}>
+          <button className="search-btn btn-press" onClick={handleSearch} disabled={loading}>
             {loading ? '...' : 'search'}
           </button>
         </div>
 
-        {/* Results */}
         <div className="search-results">
           {renderResults()}
         </div>

@@ -1,0 +1,266 @@
+/* Skeleton Loading Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Base skeleton style */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #3d2814 25%,
+    #4a3420 50%,
+    #3d2814 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Skeleton variants */
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-sm {
+  height: 12px;
+  margin-bottom: 6px;
+}
+
+.skeleton-text-lg {
+  height: 20px;
+  margin-bottom: 10px;
+}
+
+.skeleton-title {
+  height: 28px;
+  margin-bottom: 12px;
+}
+
+/* Album card skeleton */
+.skeleton-album-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton-album-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+}
+
+.skeleton-album-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Albums grid skeleton */
+.skeleton-albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 25px;
+}
+
+/* Review card skeleton */
+.skeleton-review-card {
+  background-color: #7b4739;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 15px;
+}
+
+.skeleton-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.skeleton-review-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.skeleton-stars {
+  width: 100px;
+  height: 20px;
+}
+
+.skeleton-review-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Playlist card skeleton */
+.skeleton-playlist-card {
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.skeleton-playlist-header {
+  margin-bottom: 15px;
+}
+
+.skeleton-playlist-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.skeleton-playlist-albums {
+  display: flex;
+  gap: 8px;
+}
+
+.skeleton-playlist-cover {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+}
+
+.skeleton-playlist-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Profile skeleton */
+.skeleton-profile-page {
+  padding: 40px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.skeleton-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.skeleton-profile-avatar {
+  width: 120px;
+  height: 120px;
+}
+
+.skeleton-profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-profile-stats {
+  display: flex;
+  gap: 40px;
+  margin-left: auto;
+}
+
+.skeleton-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.skeleton-profile-actions {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.skeleton-profile-section {
+  margin-bottom: 40px;
+}
+
+.skeleton-albums-row {
+  display: flex;
+  gap: 15px;
+}
+
+/* Profile review skeleton */
+.skeleton-profile-review {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid #3a2a1a;
+}
+
+.skeleton-profile-review-content {
+  flex: 1;
+}
+
+/* Fade in animation for loaded content */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Page transitions */
+.page-transition {
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* Hover lift effect */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth button press */
+.btn-press {
+  transition: transform 0.1s ease;
+}
+
+.btn-press:active {
+  transform: scale(0.96);
+}
+
+/* Staggered fade in for lists */
+.stagger-fade > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-fade > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-fade > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-fade > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-fade > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-fade > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-fade > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-fade > *:nth-child(8) { animation-delay: 350ms; }
+.stagger-fade > *:nth-child(9) { animation-delay: 400ms; }
+.stagger-fade > *:nth-child(10) { animation-delay: 450ms; }
+
+.stagger-fade > * {
+  animation: fadeIn 0.4s ease-out both;
+}

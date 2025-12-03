@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
+import { PlaylistCardSkeleton } from '../../components/Skeleton'
 import './Playlists.css'
 
 // Character limits
@@ -148,7 +149,20 @@ function Playlists() {
   )
 
   if (loading) {
-    return <div className="playlists-page"><p className="loading-text">Loading playlists...</p></div>
+    return (
+      <div className="playlists-page">
+        <div className="playlists-content">
+          <div className="skeleton" style={{ width: '200px', height: '50px', borderRadius: '25px', marginBottom: '30px' }} />
+          <div className="playlists-section">
+            <div className="skeleton skeleton-text-lg" style={{ width: '180px', marginBottom: '10px' }} />
+            <div className="section-line"></div>
+            <PlaylistCardSkeleton />
+            <PlaylistCardSkeleton />
+            <PlaylistCardSkeleton />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { spotifyService } from '../../services/spotify'
+import { ProfilePageSkeleton } from '../../components/Skeleton'
 import './Profile.css'
 import FollowsModal from './FollowsModal'
 
@@ -251,10 +252,14 @@ function Profile() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  if (loading) return <div className="profile-page">Loading...</div>
+  if (loading) return (
+    <div className="profile-page">
+      <ProfilePageSkeleton />
+    </div>
+  )
 
   return (
-    <div className="profile-page">
+    <div className="profile-page page-transition">
       <div className="profile-header">
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt="Avatar" className="profile-avatar" />
