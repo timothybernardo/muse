@@ -8,7 +8,53 @@ let tokenExpiry = null
 // ===================
 // CACHE CONFIGURATION
 // ===================
+const STORAGE_KEY = 'muse_spotify_cache'
 const cache = new Map()
+
+// Load cache from sessionStorage on startup
+const loadCacheFromStorage = () => {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      const now = Date.now()
+      let loaded = 0
+      for (const [key, item] of Object.entries(parsed)) {
+        if (now < item.expiry) {
+          cache.set(key, item)
+          loaded++
+        }
+      }
+      console.log(`[Cache] Loaded ${loaded} items from storage`)
+    }
+  } catch (e) {
+    console.warn('[Cache] Failed to load from storage', e)
+  }
+}
+
+// Save cache to sessionStorage
+const saveCacheToStorage = () => {
+  try {
+    const obj = Object.fromEntries(cache.entries())
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(obj))
+  } catch (e) {
+    // Storage full - clear old entries
+    console.warn('[Cache] Storage full, clearing old entries')
+    sessionStorage.removeItem(STORAGE_KEY)
+  }
+}
+
+// Load on startup
+loadCacheFromStorage()
+
+// Save periodically (every 30 seconds)
+setInterval(saveCacheToStorage, 30 * 1000)
+
+// Save before page unload
+window.addEventListener('beforeunload', saveCacheToStorage)
+
+// Track in-flight requests to prevent duplicates
+const pendingRequests = new Map()
 
 const CACHE_DURATIONS = {
   album: 60 * 60 * 1000,         // 1 hour - album details rarely change
@@ -85,49 +131,29 @@ const spotifyFetch = async (endpoint) => {
 // CACHED API METHODS
 // ===================
 export const spotifyService = {
-  // Get single album (cached)
+  // Get single album (NOT cached - always fetch fresh to ensure tracks are included)
   getAlbum: async (albumId) => {
-    const cacheKey = `album:${albumId}`
-    const cached = getCached(cacheKey)
-    if (cached) {
-      console.log(`[Cache HIT] album: ${albumId}`)
-      return cached
-    }
-
-    console.log(`[Cache MISS] album: ${albumId}`)
+    console.log(`[Fetch] album: ${albumId}`)
     const data = await spotifyFetch(`/albums/${albumId}`)
-    setCache(cacheKey, data, CACHE_DURATIONS.album)
     return data
   },
 
   // Get multiple albums (cached individually)
+  // NOTE: Batch endpoint returns albums WITHOUT full tracks, so don't cache as full albums
   getAlbums: async (albumIds) => {
-    const uncachedIds = []
     const results = {}
 
-    // Check cache for each album
-    for (const id of albumIds) {
-      const cached = getCached(`album:${id}`)
-      if (cached) {
-        results[id] = cached
-      } else {
-        uncachedIds.push(id)
-      }
-    }
+    console.log(`[Cache] Fetching ${albumIds.length} albums (batch - no track data)`)
 
-    console.log(`[Cache] ${albumIds.length - uncachedIds.length} hits, ${uncachedIds.length} misses`)
-
-    // Fetch uncached albums in batches of 20
-    if (uncachedIds.length > 0) {
-      for (let i = 0; i < uncachedIds.length; i += 20) {
-        const batch = uncachedIds.slice(i, i + 20)
-        const data = await spotifyFetch(`/albums?ids=${batch.join(',')}`)
-        if (data.albums) {
-          for (const album of data.albums) {
-            if (album) {
-              setCache(`album:${album.id}`, album, CACHE_DURATIONS.album)
-              results[album.id] = album
-            }
+    // Fetch albums in batches of 20
+    for (let i = 0; i < albumIds.length; i += 20) {
+      const batch = albumIds.slice(i, i + 20)
+      const data = await spotifyFetch(`/albums?ids=${batch.join(',')}`)
+      if (data.albums) {
+        for (const album of data.albums) {
+          if (album) {
+            // DON'T cache these - they don't have full track info
+            results[album.id] = album
           }
         }
       }
@@ -137,7 +163,7 @@ export const spotifyService = {
     return albumIds.map(id => results[id]).filter(Boolean)
   },
 
-  // Get new releases (cached)
+  // Get new releases (cached - but don't cache as full albums)
   getNewReleases: async (limit = 20) => {
     const cacheKey = `newReleases:${limit}`
     const cached = getCached(cacheKey)
@@ -150,10 +176,8 @@ export const spotifyService = {
     const data = await spotifyFetch(`/browse/new-releases?limit=${limit}`)
     const albums = data.albums?.items || []
 
-    // Also cache individual albums
-    for (const album of albums) {
-      setCache(`album:${album.id}`, album, CACHE_DURATIONS.album)
-    }
+    // NOTE: Don't cache these as full albums - they don't have tracks!
+    // Only cache the newReleases list itself
 
     setCache(cacheKey, albums, CACHE_DURATIONS.newReleases)
     return albums
@@ -181,7 +205,7 @@ export const spotifyService = {
     return sorted
   },
 
-  // Search albums (cached)
+  // Search albums (cached - but don't cache as full albums)
   searchAlbums: async (query, limit = 20) => {
     const cacheKey = `search:album:${query.toLowerCase()}:${limit}`
     const cached = getCached(cacheKey)
@@ -194,10 +218,7 @@ export const spotifyService = {
     const data = await spotifyFetch(`/search?q=${encodeURIComponent(query)}&type=album&limit=${limit}`)
     const albums = data.albums?.items || []
 
-    // Cache individual albums too
-    for (const album of albums) {
-      setCache(`album:${album.id}`, album, CACHE_DURATIONS.album)
-    }
+    // NOTE: Don't cache these as full albums - they don't have tracks!
 
     setCache(cacheKey, albums, CACHE_DURATIONS.search)
     return albums
@@ -288,6 +309,33 @@ export const spotifyService = {
     const albums = data.items || []
     setCache(cacheKey, albums, CACHE_DURATIONS.artist)
     return albums
+  },
+
+  // Get album tracks (cached)
+  getAlbumTracks: async (albumId, limit = 50) => {
+    const cacheKey = `albumTracks:${albumId}:${limit}`
+    const cached = getCached(cacheKey)
+    if (cached) {
+      console.log(`[Cache HIT] albumTracks: ${albumId}`)
+      return cached
+    }
+
+    console.log(`[Cache MISS] albumTracks: ${albumId}`)
+    const data = await spotifyFetch(`/albums/${albumId}/tracks?limit=${limit}`)
+    const tracks = data.items || []
+    setCache(cacheKey, tracks, CACHE_DURATIONS.album)
+    return tracks
+  },
+
+  // Get track details (cached) - useful for lyrics lookup
+  getTrack: async (trackId) => {
+    const cacheKey = `track:${trackId}`
+    const cached = getCached(cacheKey)
+    if (cached) return cached
+
+    const data = await spotifyFetch(`/tracks/${trackId}`)
+    setCache(cacheKey, data, CACHE_DURATIONS.album)
+    return data
   },
 
   // ===================
