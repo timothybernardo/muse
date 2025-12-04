@@ -697,7 +697,7 @@ function AlbumDetail() {
               </div>
             ))
           ) : (
-            <p className="loading-text">No reviews yet. Be the first to review!</p>
+            <p className="loading-text">no reviews yet. be the first to review!</p>
           )}
         </div>
       </div>
