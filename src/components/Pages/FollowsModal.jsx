@@ -147,7 +147,7 @@ function FollowsModal({ userId, initialTab, onClose }) {
 
         <div className="follows-list">
           {loading ? (
-            <p className="follows-empty">Loading...</p>
+            <p className="follows-empty">loading...</p>
           ) : displayList.length > 0 ? (
             displayList.map(user => (
               <div 

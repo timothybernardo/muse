@@ -318,11 +318,11 @@ function PlaylistDetail() {
   }
 
   if (loading) {
-    return <div className="playlist-detail-page"><p className="loading-text">Loading playlist...</p></div>
+    return <div className="playlist-detail-page"><p className="loading-text">loading playlist...</p></div>
   }
 
   if (!playlist) {
-    return <div className="playlist-detail-page"><p className="loading-text">Playlist not found</p></div>
+    return <div className="playlist-detail-page"><p className="loading-text">playlist not found</p></div>
   }
 
   const isOwner = currentUser?.id === playlist.user_id
@@ -531,7 +531,7 @@ function PlaylistDetail() {
               <button className="lyrics-modal-close" onClick={closeLyricsModal}>×</button>
             </div>
             <div className="lyrics-modal-content">
-              {lyricsLoading ? <p className="lyrics-loading">Loading lyrics...</p> : lyrics}
+              {lyricsLoading ? <p className="lyrics-loading">loading lyrics...</p> : lyrics}
             </div>
           </div>
         </div>
