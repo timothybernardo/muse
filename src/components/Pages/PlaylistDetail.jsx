@@ -43,6 +43,7 @@ function PlaylistDetail() {
   const [showEditNoteModal, setShowEditNoteModal] = useState(false)
   const [editingSong, setEditingSong] = useState(null)
   const [editNote, setEditNote] = useState('')
+  const [songToRemove, setSongToRemove] = useState(null)
 
   useEffect(() => {
     fetchPlaylist()
@@ -113,22 +114,28 @@ function PlaylistDetail() {
     }
   }
 
-  const handleRemoveSong = async (song, index) => {
-    if (!confirm(`Remove "${song.track_name}" from this playlist?`)) return
-
-    const { error } = await supabase
-      .from('playlist_songs')
-      .delete()
-      .eq('playlist_id', id)
-      .eq('position', song.position)
-
-    if (error) {
-      console.error('Error removing song:', error)
-      alert('Error removing song: ' + error.message)
-    } else {
-      fetchPlaylist()
-    }
+  const handleRemoveSong = async (song) => {
+  setSongToRemove(song)
   }
+
+  const confirmRemoveSong = async () => {
+  if (!songToRemove) return
+
+  const { error } = await supabase
+    .from('playlist_songs')
+    .delete()
+    .eq('playlist_id', id)
+    .eq('position', songToRemove.position)
+
+  if (error) {
+    console.error('Error removing song:', error)
+    alert('Error removing song: ' + error.message)
+  } else {
+    fetchPlaylist()
+  }
+  setSongToRemove(null)
+}
+
 
   const handleMoveSong = async (index, direction) => {
     const newIndex = index + direction
@@ -417,7 +424,7 @@ function PlaylistDetail() {
                   </button>
                   <button 
                     className="remove-song-btn"
-                    onClick={() => handleRemoveSong(song, index)}
+                    onClick={() => handleRemoveSong(song)}
                     title="Remove song"
                   >
                     ×
@@ -452,6 +459,22 @@ function PlaylistDetail() {
           </div>
         </div>
       )}
+
+      {/* Remove Song Confirmation Modal */}
+{songToRemove && (
+  <div className="lyrics-modal-overlay" onClick={() => setSongToRemove(null)}>
+    <div className="delete-confirm-modal" onClick={e => e.stopPropagation()}>
+      <h2 className="delete-confirm-title">remove song?</h2>
+      <p className="delete-confirm-text">
+        Remove "{songToRemove.track_name}" from this playlist?
+      </p>
+      <div className="delete-confirm-buttons">
+        <button className="delete-confirm-btn cancel" onClick={() => setSongToRemove(null)}>cancel</button>
+        <button className="delete-confirm-btn delete" onClick={confirmRemoveSong}>remove</button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Edit Playlist Modal */}
       {showEditModal && (
@@ -577,7 +600,7 @@ function PlaylistDetail() {
                   </div>
                 ))
               ) : (
-                <p className="no-results">{searchQuery ? 'No results found' : 'Search for a song to add'}</p>
+                <p className="no-results">{searchQuery ? 'no results found' : 'search for a song to add'}</p>
               )}
             </div>
 
