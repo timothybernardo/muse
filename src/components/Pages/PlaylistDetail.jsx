@@ -5,11 +5,11 @@ import { geniusService } from '../../services/genius'
 import { spotifyService } from '../../services/spotify'
 import './PlaylistDetail.css'
 
-// Character limits
 const LIMITS = {
   playlistName: 50,
   playlistDescription: 150,
-  songNote: 100
+  songNote: 100,
+  comment: 200
 }
 
 function PlaylistDetail() {
@@ -34,16 +34,21 @@ function PlaylistDetail() {
   const [searching, setSearching] = useState(false)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-
   const [showEditModal, setShowEditModal] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
 
-  // Edit song note
   const [showEditNoteModal, setShowEditNoteModal] = useState(false)
   const [editingSong, setEditingSong] = useState(null)
   const [editNote, setEditNote] = useState('')
   const [songToRemove, setSongToRemove] = useState(null)
+
+  // Likes & Comments state
+  const [likeCount, setLikeCount] = useState(0)
+  const [userLiked, setUserLiked] = useState(false)
+  const [comments, setComments] = useState([])
+  const [showComments, setShowComments] = useState(false)
+  const [newComment, setNewComment] = useState('')
 
   useEffect(() => {
     fetchPlaylist()
@@ -84,10 +89,124 @@ function PlaylistDetail() {
         .order('position', { ascending: true })
 
       setSongs(songsData || [])
+
+      // Fetch like count
+      const { count } = await supabase
+        .from('playlist_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('playlist_id', id)
+      setLikeCount(count || 0)
+
+      // Check if current user liked
+      if (user) {
+        const { data: likeData } = await supabase
+          .from('playlist_likes')
+          .select('id')
+          .eq('playlist_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+        setUserLiked(!!likeData)
+      }
+
+      // Fetch comments with profiles
+      const { data: commentsData } = await supabase
+        .from('playlist_comments')
+        .select('*')
+        .eq('playlist_id', id)
+        .order('created_at', { ascending: true })
+
+      if (commentsData) {
+        const commentsWithProfiles = await Promise.all(
+          commentsData.map(async (comment) => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', comment.user_id)
+              .single()
+            return { ...comment, profile }
+          })
+        )
+        setComments(commentsWithProfiles)
+      }
+
     } catch (error) {
       console.error('Error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleLikeClick = async () => {
+    if (!currentUser) {
+      alert('Please log in to like playlists')
+      return
+    }
+
+    if (userLiked) {
+      const { error } = await supabase
+        .from('playlist_likes')
+        .delete()
+        .eq('playlist_id', id)
+        .eq('user_id', currentUser.id)
+
+      if (!error) {
+        setUserLiked(false)
+        setLikeCount(prev => prev - 1)
+      }
+    } else {
+      const { error } = await supabase
+        .from('playlist_likes')
+        .insert({ playlist_id: id, user_id: currentUser.id })
+
+      if (!error) {
+        setUserLiked(true)
+        setLikeCount(prev => prev + 1)
+      }
+    }
+  }
+
+  const handleCommentSubmit = async () => {
+    if (!currentUser) {
+      alert('Please log in to comment')
+      return
+    }
+
+    const text = newComment.trim()
+    if (!text) return
+
+    const { data, error } = await supabase
+      .from('playlist_comments')
+      .insert({
+        playlist_id: id,
+        user_id: currentUser.id,
+        comment_text: text.slice(0, LIMITS.comment)
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error posting comment:', error)
+      return
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('id', currentUser.id)
+      .single()
+
+    setComments([...comments, { ...data, profile }])
+    setNewComment('')
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    const { error } = await supabase
+      .from('playlist_comments')
+      .delete()
+      .eq('id', commentId)
+
+    if (!error) {
+      setComments(comments.filter(c => c.id !== commentId))
     }
   }
 
@@ -115,27 +234,26 @@ function PlaylistDetail() {
   }
 
   const handleRemoveSong = async (song) => {
-  setSongToRemove(song)
+    setSongToRemove(song)
   }
 
   const confirmRemoveSong = async () => {
-  if (!songToRemove) return
+    if (!songToRemove) return
 
-  const { error } = await supabase
-    .from('playlist_songs')
-    .delete()
-    .eq('playlist_id', id)
-    .eq('position', songToRemove.position)
+    const { error } = await supabase
+      .from('playlist_songs')
+      .delete()
+      .eq('playlist_id', id)
+      .eq('position', songToRemove.position)
 
-  if (error) {
-    console.error('Error removing song:', error)
-    alert('Error removing song: ' + error.message)
-  } else {
-    fetchPlaylist()
+    if (error) {
+      console.error('Error removing song:', error)
+      alert('Error removing song: ' + error.message)
+    } else {
+      fetchPlaylist()
+    }
+    setSongToRemove(null)
   }
-  setSongToRemove(null)
-}
-
 
   const handleMoveSong = async (index, direction) => {
     const newIndex = index + direction
@@ -144,7 +262,6 @@ function PlaylistDetail() {
     const songA = songs[index]
     const songB = songs[newIndex]
 
-    // Swap positions in database
     const { error: errorA } = await supabase
       .from('playlist_songs')
       .update({ position: songB.position })
@@ -297,11 +414,7 @@ function PlaylistDetail() {
       fetchPlaylist()
     } else {
       console.error('Error adding song:', error)
-      if (error.code === '23505' || error.code === '409') {
-        alert('This song is already in the playlist!')
-      } else {
-        alert('Error adding song: ' + error.message)
-      }
+      alert('Error adding song: ' + error.message)
     }
   }
 
@@ -361,6 +474,24 @@ function PlaylistDetail() {
             </h1>
             <p className="playlist-description">{playlist.description}</p>
             
+            {/* Like & Comment buttons */}
+            <div className="playlist-interactions">
+              <button 
+                className={`playlist-like-btn ${userLiked ? 'liked' : ''}`}
+                onClick={handleLikeClick}
+              >
+                <span>{userLiked ? '♥' : '♡'}</span>
+                <span>{likeCount}</span>
+              </button>
+              <button 
+                className="playlist-comment-btn"
+                onClick={() => setShowComments(!showComments)}
+              >
+                <span>💬</span>
+                <span>{comments.length}</span>
+              </button>
+            </div>
+            
             {isOwner && (
               <button className="delete-playlist-btn" onClick={() => setShowDeleteConfirm(true)}>
                 delete playlist
@@ -381,6 +512,65 @@ function PlaylistDetail() {
           </Link>
         </div>
 
+        {/* Comments Section */}
+        {showComments && (
+          <div className="playlist-comments-section">
+            <h3 className="comments-title">comments</h3>
+            
+            {comments.length > 0 ? (
+              <div className="comments-list">
+                {comments.map(comment => (
+                  <div key={comment.id} className="comment-item">
+                    <div 
+                      className="comment-user"
+                      onClick={() => navigate(`/profile/${comment.user_id}`)}
+                    >
+                      {comment.profile?.avatar_url ? (
+                        <img src={comment.profile.avatar_url} alt="" className="comment-avatar" />
+                      ) : (
+                        <div className="comment-avatar" />
+                      )}
+                      <span className="comment-username">{comment.profile?.username || 'User'}</span>
+                    </div>
+                    <p className="comment-text">{comment.comment_text}</p>
+                    {currentUser?.id === comment.user_id && (
+                      <button 
+                        className="delete-comment-btn"
+                        onClick={() => handleDeleteComment(comment.id)}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-comments">no comments yet</p>
+            )}
+
+            {currentUser && (
+              <div className="comment-input-wrapper">
+                <input
+                  type="text"
+                  className="comment-input"
+                  placeholder="write a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value.slice(0, LIMITS.comment))}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit()}
+                  maxLength={LIMITS.comment}
+                />
+                <button 
+                  className="comment-submit-btn"
+                  onClick={handleCommentSubmit}
+                  disabled={!newComment.trim()}
+                >
+                  post
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {songs.length > 0 ? (
           songs.map((song, index) => (
             <div key={song.playlist_id + '-' + song.album_id + '-' + index} className="song-item">
@@ -399,36 +589,10 @@ function PlaylistDetail() {
               
               {isOwner && (
                 <div className="song-actions">
-                  <button 
-                    className="move-song-btn"
-                    onClick={() => handleMoveSong(index, -1)}
-                    disabled={index === 0}
-                    title="Move up"
-                  >
-                    ↑
-                  </button>
-                  <button 
-                    className="move-song-btn"
-                    onClick={() => handleMoveSong(index, 1)}
-                    disabled={index === songs.length - 1}
-                    title="Move down"
-                  >
-                    ↓
-                  </button>
-                  <button 
-                    className="edit-note-btn"
-                    onClick={() => handleEditNote(song)}
-                    title="Edit note"
-                  >
-                    ✎
-                  </button>
-                  <button 
-                    className="remove-song-btn"
-                    onClick={() => handleRemoveSong(song)}
-                    title="Remove song"
-                  >
-                    ×
-                  </button>
+                  <button className="move-song-btn" onClick={() => handleMoveSong(index, -1)} disabled={index === 0}>↑</button>
+                  <button className="move-song-btn" onClick={() => handleMoveSong(index, 1)} disabled={index === songs.length - 1}>↓</button>
+                  <button className="edit-note-btn" onClick={() => handleEditNote(song)}>✎</button>
+                  <button className="remove-song-btn" onClick={() => handleRemoveSong(song)}>×</button>
                 </div>
               )}
             </div>
@@ -438,9 +602,7 @@ function PlaylistDetail() {
         )}
 
         {isOwner && (
-          <button className="add-song-btn" onClick={() => setShowAddModal(true)}>
-            + add song
-          </button>
+          <button className="add-song-btn" onClick={() => setShowAddModal(true)}>+ add song</button>
         )}
       </div>
 
@@ -449,9 +611,7 @@ function PlaylistDetail() {
         <div className="lyrics-modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
           <div className="delete-confirm-modal" onClick={e => e.stopPropagation()}>
             <h2 className="delete-confirm-title">delete playlist?</h2>
-            <p className="delete-confirm-text">
-              Are you sure you want to delete "{playlist.title}"? This action cannot be undone.
-            </p>
+            <p className="delete-confirm-text">Are you sure you want to delete "{playlist.title}"? This action cannot be undone.</p>
             <div className="delete-confirm-buttons">
               <button className="delete-confirm-btn cancel" onClick={() => setShowDeleteConfirm(false)}>cancel</button>
               <button className="delete-confirm-btn delete" onClick={handleDeletePlaylist}>delete</button>
@@ -461,50 +621,32 @@ function PlaylistDetail() {
       )}
 
       {/* Remove Song Confirmation Modal */}
-{songToRemove && (
-  <div className="lyrics-modal-overlay" onClick={() => setSongToRemove(null)}>
-    <div className="delete-confirm-modal" onClick={e => e.stopPropagation()}>
-      <h2 className="delete-confirm-title">remove song?</h2>
-      <p className="delete-confirm-text">
-        Remove "{songToRemove.track_name}" from this playlist?
-      </p>
-      <div className="delete-confirm-buttons">
-        <button className="delete-confirm-btn cancel" onClick={() => setSongToRemove(null)}>cancel</button>
-        <button className="delete-confirm-btn delete" onClick={confirmRemoveSong}>remove</button>
-      </div>
-    </div>
-  </div>
-)}
+      {songToRemove && (
+        <div className="lyrics-modal-overlay" onClick={() => setSongToRemove(null)}>
+          <div className="delete-confirm-modal" onClick={e => e.stopPropagation()}>
+            <h2 className="delete-confirm-title">remove song?</h2>
+            <p className="delete-confirm-text">Remove "{songToRemove.track_name}" from this playlist?</p>
+            <div className="delete-confirm-buttons">
+              <button className="delete-confirm-btn cancel" onClick={() => setSongToRemove(null)}>cancel</button>
+              <button className="delete-confirm-btn delete" onClick={confirmRemoveSong}>remove</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Playlist Modal */}
       {showEditModal && (
         <div className="lyrics-modal-overlay" onClick={() => setShowEditModal(false)}>
           <div className="edit-playlist-modal" onClick={e => e.stopPropagation()}>
             <h2 className="edit-modal-title">edit playlist</h2>
-            
             <div className="input-wrapper">
-              <input
-                type="text"
-                placeholder="playlist name"
-                className="edit-modal-input"
-                value={editTitle}
-                onChange={e => setEditTitle(e.target.value.slice(0, LIMITS.playlistName))}
-                maxLength={LIMITS.playlistName}
-              />
+              <input type="text" placeholder="playlist name" className="edit-modal-input" value={editTitle} onChange={e => setEditTitle(e.target.value.slice(0, LIMITS.playlistName))} maxLength={LIMITS.playlistName} />
               <span className="char-count">{editTitle.length}/{LIMITS.playlistName}</span>
             </div>
-
             <div className="input-wrapper">
-              <textarea
-                placeholder="description (optional)"
-                className="edit-modal-textarea"
-                value={editDescription}
-                onChange={e => setEditDescription(e.target.value.slice(0, LIMITS.playlistDescription))}
-                maxLength={LIMITS.playlistDescription}
-              />
+              <textarea placeholder="description (optional)" className="edit-modal-textarea" value={editDescription} onChange={e => setEditDescription(e.target.value.slice(0, LIMITS.playlistDescription))} maxLength={LIMITS.playlistDescription} />
               <span className="char-count">{editDescription.length}/{LIMITS.playlistDescription}</span>
             </div>
-
             <div className="edit-modal-buttons">
               <button className="edit-modal-btn cancel" onClick={() => setShowEditModal(false)}>cancel</button>
               <button className="edit-modal-btn save" onClick={handleUpdatePlaylist}>save</button>
@@ -528,13 +670,7 @@ function PlaylistDetail() {
               </div>
             )}
             <div className="input-wrapper">
-              <textarea
-                placeholder="add a note about this song..."
-                className="edit-modal-textarea"
-                value={editNote}
-                onChange={e => setEditNote(e.target.value.slice(0, LIMITS.songNote))}
-                maxLength={LIMITS.songNote}
-              />
+              <textarea placeholder="add a note about this song..." className="edit-modal-textarea" value={editNote} onChange={e => setEditNote(e.target.value.slice(0, LIMITS.songNote))} maxLength={LIMITS.songNote} />
               <span className="char-count">{editNote.length}/{LIMITS.songNote}</span>
             </div>
             <div className="edit-modal-buttons">
@@ -553,9 +689,7 @@ function PlaylistDetail() {
               <h2 className="lyrics-modal-title">lyrics from "{selectedSong?.track_name}"</h2>
               <button className="lyrics-modal-close" onClick={closeLyricsModal}>×</button>
             </div>
-            <div className="lyrics-modal-content">
-              {lyricsLoading ? <p className="lyrics-loading">loading lyrics...</p> : lyrics}
-            </div>
+            <div className="lyrics-modal-content">{lyricsLoading ? <p className="lyrics-loading">loading lyrics...</p> : lyrics}</div>
           </div>
         </div>
       )}
@@ -568,29 +702,14 @@ function PlaylistDetail() {
               <h2 className="add-song-title">add song to playlist</h2>
               <button className="add-song-close" onClick={closeAddModal}>×</button>
             </div>
-
             <div className="search-input-container">
-              <input
-                type="text"
-                placeholder="search for a song..."
-                className="search-input"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-              />
-              <button className="search-btn" onClick={handleSearch} disabled={searching}>
-                {searching ? '...' : 'search'}
-              </button>
+              <input type="text" placeholder="search for a song..." className="search-input" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyPress={handleKeyPress} />
+              <button className="search-btn" onClick={handleSearch} disabled={searching}>{searching ? '...' : 'search'}</button>
             </div>
-
             <div className="search-results">
               {searchResults.length > 0 ? (
                 searchResults.map(track => (
-                  <div
-                    key={track.id}
-                    className={`search-result-item ${selectedTrack?.id === track.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedTrack(track)}
-                  >
+                  <div key={track.id} className={`search-result-item ${selectedTrack?.id === track.id ? 'selected' : ''}`} onClick={() => setSelectedTrack(track)}>
                     <img src={track.album.images[0]?.url} alt={track.name} className="search-result-cover" />
                     <div className="search-result-info">
                       <p className="search-result-title">{track.name}</p>
@@ -603,21 +722,12 @@ function PlaylistDetail() {
                 <p className="no-results">{searchQuery ? 'no results found' : 'search for a song to add'}</p>
               )}
             </div>
-
             {selectedTrack && (
               <div className="input-wrapper">
-                <textarea
-                  placeholder="add a note about this song (optional)"
-                  className="note-input"
-                  value={trackNote}
-                  onChange={e => setTrackNote(e.target.value.slice(0, LIMITS.songNote))}
-                  maxLength={LIMITS.songNote}
-                  rows={2}
-                />
+                <textarea placeholder="add a note about this song (optional)" className="note-input" value={trackNote} onChange={e => setTrackNote(e.target.value.slice(0, LIMITS.songNote))} maxLength={LIMITS.songNote} rows={2} />
                 <span className="char-count">{trackNote.length}/{LIMITS.songNote}</span>
               </div>
             )}
-
             <div className="add-song-buttons">
               <button className="add-song-modal-btn cancel" onClick={closeAddModal}>cancel</button>
               <button className="add-song-modal-btn add" onClick={handleAddSong} disabled={!selectedTrack}>add song</button>
