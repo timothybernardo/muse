@@ -4,7 +4,6 @@ import { supabase } from '../../services/supabase'
 import { PlaylistCardSkeleton } from '../../components/Skeleton'
 import './Playlists.css'
 
-// Character limits
 const LIMITS = {
   playlistName: 50,
   playlistDescription: 150
@@ -55,8 +54,26 @@ function Playlists() {
               .select('username, avatar_url')
               .eq('id', playlist.user_id)
               .single()
+
+            // Get like count for this playlist
+            const { count: likeCount } = await supabase
+              .from('playlist_likes')
+              .select('*', { count: 'exact', head: true })
+              .eq('playlist_id', playlist.id)
+
+            // Get comment count for this playlist
+            const { count: commentCount } = await supabase
+              .from('playlist_comments')
+              .select('*', { count: 'exact', head: true })
+              .eq('playlist_id', playlist.id)
             
-            return { ...playlist, playlist_songs: songs || [], profiles: profile }
+            return { 
+              ...playlist, 
+              playlist_songs: songs || [], 
+              profiles: profile,
+              likeCount: likeCount || 0,
+              commentCount: commentCount || 0
+            }
           })
         )
 
@@ -74,7 +91,11 @@ function Playlists() {
           setUserPlaylists(playlistsWithCounts.filter(p => p.user_id === user.id))
         }
 
-        setFavoritePlaylists(playlistsWithCounts.slice(0, 5))
+        // Sort by like count for favorites (most liked first)
+        const sortedByLikes = [...playlistsWithCounts].sort((a, b) => b.likeCount - a.likeCount)
+        setFavoritePlaylists(sortedByLikes.slice(0, 5))
+
+        // Recent playlists stay sorted by created_at (already sorted from query)
         setRecentPlaylists(playlistsWithCounts.slice(0, 5))
       }
     } catch (error) {
@@ -123,17 +144,29 @@ function Playlists() {
 
   const PlaylistCard = ({ playlist }) => (
     <div className="playlist-card" onClick={() => handlePlaylistClick(playlist.id)}>
-      <div className="playlist-header">
-        <span className="playlist-name">{playlist.title}</span>
-      </div>
-      <div className="playlist-content">
+      <div className="playlist-card-left">
         <div className="playlist-albums">
           {playlist.playlist_songs?.slice(0, 4).map((song, index) => (
             <img key={index} src={song.album_cover} alt={song.track_name} className="playlist-album-cover" />
           ))}
           {(!playlist.playlist_songs || playlist.playlist_songs.length === 0) && (
-            <div className="empty-state" style={{ padding: '20px' }}>No songs yet</div>
+            <>
+              <div className="playlist-album-cover empty" />
+              <div className="playlist-album-cover empty" />
+              <div className="playlist-album-cover empty" />
+              <div className="playlist-album-cover empty" />
+            </>
           )}
+        </div>
+      </div>
+      <div className="playlist-card-right">
+        <span className="playlist-name">{playlist.title}</span>
+        {playlist.description && (
+          <p className="playlist-bio">{playlist.description}</p>
+        )}
+        <div className="playlist-stats">
+          <span className="playlist-stat">♥ {playlist.likeCount || 0}</span>
+          <span className="playlist-stat">💬 {playlist.commentCount || 0}</span>
         </div>
         <div className="playlist-user" onClick={(e) => handleUserClick(e, playlist.user_id)}>
           {playlist.profiles?.avatar_url ? (
@@ -142,7 +175,6 @@ function Playlists() {
             <div className="playlist-user-avatar" />
           )}
           <span className="playlist-user-name">{playlist.profiles?.username || 'User'}</span>
-          <span className="playlist-user-count">{playlist.userPlaylistCount} playlists</span>
         </div>
       </div>
     </div>
@@ -183,7 +215,7 @@ function Playlists() {
         )}
 
         <div className="playlists-section">
-          <h2 className="section-title">user-favorite playlists</h2>
+          <h2 className="section-title">most-loved playlists</h2>
           <div className="section-line"></div>
           {favoritePlaylists.length > 0 ? (
             favoritePlaylists.map(playlist => (
