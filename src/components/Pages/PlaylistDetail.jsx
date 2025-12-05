@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useToast } from '../../components/Toast'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { geniusService } from '../../services/genius'
@@ -15,6 +16,7 @@ const LIMITS = {
 function PlaylistDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const toast = useToast()
   const [playlist, setPlaylist] = useState(null)
   const [songs, setSongs] = useState([])
   const [creator, setCreator] = useState(null)
@@ -138,7 +140,7 @@ function PlaylistDetail() {
 
   const handleLikeClick = async () => {
     if (!currentUser) {
-      alert('Please log in to like playlists')
+      toast.error('Please log in to like playlists')
       return
     }
 
@@ -161,13 +163,23 @@ function PlaylistDetail() {
       if (!error) {
         setUserLiked(true)
         setLikeCount(prev => prev + 1)
+
+        // Send notification (don't notify yourself)
+        if (playlist.user_id !== currentUser.id) {
+          await supabase.from('notifications').insert({
+            user_id: playlist.user_id,
+            from_user_id: currentUser.id,
+            type: 'playlist_like',
+            playlist_id: id
+          })
+        }
       }
     }
   }
 
   const handleCommentSubmit = async () => {
     if (!currentUser) {
-      alert('Please log in to comment')
+      toast.error('Please log in to comment')
       return
     }
 
@@ -187,6 +199,17 @@ function PlaylistDetail() {
     if (error) {
       console.error('Error posting comment:', error)
       return
+    }
+
+    // Send notification (don't notify yourself)
+    if (playlist.user_id !== currentUser.id) {
+      await supabase.from('notifications').insert({
+        user_id: playlist.user_id,
+        from_user_id: currentUser.id,
+        type: 'playlist_comment',
+        playlist_id: id,
+        comment_text: text.slice(0, 100)
+      })
     }
 
     const { data: profile } = await supabase
@@ -212,9 +235,23 @@ function PlaylistDetail() {
 
   const handleUpdatePlaylist = async () => {
     if (!editTitle.trim()) {
-      alert('Playlist name cannot be empty')
-      return
-    }
+  toast.error('Playlist name cannot be empty')
+  return
+}
+// After success:
+setPlaylist({ ...playlist, title: editTitle, description: editDescription })
+setShowEditModal(false)
+toast.success('Playlist updated!')
+
+// In confirmRemoveSong, replace the alert:
+if (error) {
+  console.error('Error removing song:', error)
+  toast.error('Error removing song')
+} else {
+  fetchPlaylist()
+  toast.success('Song removed')
+}
+
 
     const { error } = await supabase
       .from('playlists')
@@ -247,12 +284,13 @@ function PlaylistDetail() {
       .eq('position', songToRemove.position)
 
     if (error) {
-      console.error('Error removing song:', error)
-      alert('Error removing song: ' + error.message)
-    } else {
-      fetchPlaylist()
-    }
-    setSongToRemove(null)
+  console.error('Error removing song:', error)
+  toast.error('Error removing song')
+} else {
+  fetchPlaylist()
+  toast.success('Song removed')
+}
+setSongToRemove(null)
   }
 
   const handleMoveSong = async (index, direction) => {
@@ -300,14 +338,15 @@ function PlaylistDetail() {
       .eq('track_name', editingSong.track_name)
 
     if (error) {
-      console.error('Error updating note:', error)
-      alert('Error updating note: ' + error.message)
-    } else {
-      setShowEditNoteModal(false)
-      setEditingSong(null)
-      setEditNote('')
-      fetchPlaylist()
-    }
+  console.error('Error updating note:', error)
+  toast.error('Error updating note')
+} else {
+  setShowEditNoteModal(false)
+  setEditingSong(null)
+  setEditNote('')
+  fetchPlaylist()
+  toast.success('Note updated!')
+}
   }
 
   const handleDeletePlaylist = async () => {
@@ -317,10 +356,12 @@ function PlaylistDetail() {
       .eq('playlist_id', id)
 
     if (songsError) {
-      console.error('Error deleting songs:', songsError)
-      alert('Error deleting playlist: ' + songsError.message)
-      return
-    }
+  console.error('Error deleting songs:', songsError)
+  toast.error('Error deleting playlist')
+  return
+}
+toast.success('Playlist deleted')
+navigate('/playlists')
 
     const { error: playlistError } = await supabase
       .from('playlists')
@@ -386,9 +427,10 @@ function PlaylistDetail() {
     )
     
     if (existingSong) {
-      alert('This song is already in the playlist!')
-      return
+      toast.error('This song is already in the playlist!')
+  return
     }
+    toast.success('Song added!')
 
     const newPosition = songs.length + 1
 
@@ -436,6 +478,12 @@ function PlaylistDetail() {
     e.stopPropagation()
     navigate(`/album/${albumId}`)
   }
+
+  const handleShare = () => {
+  const url = window.location.href
+  navigator.clipboard.writeText(url)
+  toast.success('Link copied to clipboard!')
+}
 
   if (loading) {
     return <div className="playlist-detail-page"><p className="loading-text">loading playlist...</p></div>
@@ -490,6 +538,10 @@ function PlaylistDetail() {
                 <span>💬</span>
                 <span>{comments.length}</span>
               </button>
+              <button className="playlist-comment-btn" onClick={handleShare}>
+  <span>↗</span>
+  <span>share</span>
+</button>
             </div>
             
             {isOwner && (

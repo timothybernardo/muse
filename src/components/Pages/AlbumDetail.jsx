@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useToast } from '../../components/Toast'
 import { supabase } from '../../services/supabase'
 import { spotifyService } from '../../services/spotify'
 import { geniusService } from '../../services/genius'
@@ -14,6 +15,7 @@ const LIMITS = {
 function AlbumDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const toast = useToast()
   const [album, setAlbum] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -176,9 +178,9 @@ function AlbumDetail() {
 
   const handleLikeClick = async (reviewId) => {
     if (!currentUser) {
-      alert('Please log in to like reviews')
-      return
-    }
+  toast.error('Please log in to like reviews')
+  return
+}
 
     const review = reviews.find(r => r.id === reviewId)
     if (!review) return
@@ -234,9 +236,9 @@ function AlbumDetail() {
 
   const handleCommentSubmit = async (reviewId) => {
     if (!currentUser) {
-      alert('Please log in to comment')
-      return
-    }
+  toast.error('Please log in to comment')
+  return
+}
 
     const text = commentText[reviewId]?.trim()
     if (!text) return
@@ -304,9 +306,9 @@ function AlbumDetail() {
 
   const handleRatingClick = async (rating) => {
     if (!currentUser) {
-      alert('Please log in to rate albums')
-      return
-    }
+  toast.error('Please log in to rate albums')
+  return
+}
 
     setUserRating(rating)
     
@@ -349,9 +351,9 @@ function AlbumDetail() {
 
   const handleListenClick = async () => {
     if (!currentUser) {
-      alert('Please log in to mark albums as listened')
-      return
-    }
+  toast.error('Please log in to mark albums as listened')
+  return
+}
 
     if (hasListened) {
       const { error } = await supabase
@@ -392,14 +394,14 @@ function AlbumDetail() {
 
   const handleSubmitReview = async () => {
     if (!currentUser) {
-      alert('Please log in to write reviews')
-      return
-    }
+  toast.error('Please log in to write reviews')
+  return
+}
     
     if (!modalRating) {
-      alert('Please select a rating')
-      return
-    }
+  toast.error('Please select a rating')
+  return
+}
 
     if (!hasListened) {
       const { error: listenError } = await supabase.from('listens').insert({
@@ -436,6 +438,7 @@ function AlbumDetail() {
 
     setUserRating(modalRating)
     setShowReviewModal(false)
+    toast.success('Review submitted!')
 
     const reviewsData = await fetchReviews(currentUser.id)
     setReviews(reviewsData)
@@ -462,6 +465,13 @@ function AlbumDetail() {
     }
     return stars
   }
+
+  const handleShare = () => {
+  const url = window.location.href
+  navigator.clipboard.writeText(url)
+  toast.success('Link copied to clipboard!')
+}
+
 
   const handleTrackClick = async (track) => {
     setSelectedTrack(track)
@@ -535,6 +545,7 @@ function AlbumDetail() {
               </div>
               <span className={`action-icon ${hasListened ? 'active' : ''}`} onClick={handleListenClick}>🎧</span>
               <span className="action-icon" onClick={openReviewModal}>✎</span>
+              <span className="action-icon" onClick={handleShare}>↗</span>
             </div>
 
             <div className="album-stats">

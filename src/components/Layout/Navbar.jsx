@@ -79,27 +79,29 @@ function Navbar({ user }) {
   }
 
   const handleNotifClick = async (notif) => {
-    // Mark as read
-    if (!notif.read) {
-      await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notif.id)
-      setUnreadCount(prev => Math.max(0, prev - 1))
-      setNotifications(notifications.map(n => 
-        n.id === notif.id ? { ...n, read: true } : n
-      ))
-    }
-
-    setNotifOpen(false)
-
-    // Navigate based on type
-    if (notif.type === 'follow') {
-      navigate(`/profile/${notif.from_user_id}`)
-    } else if (notif.album_id) {
-      navigate(`/album/${notif.album_id}`)
-    }
+  // Mark as read
+  if (!notif.read) {
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notif.id)
+    setUnreadCount(prev => Math.max(0, prev - 1))
+    setNotifications(notifications.map(n => 
+      n.id === notif.id ? { ...n, read: true } : n
+    ))
   }
+
+  setNotifOpen(false)
+
+  // Navigate based on type
+  if (notif.type === 'follow') {
+    navigate(`/profile/${notif.from_user_id}`)
+  } else if (notif.playlist_id) {
+    navigate(`/playlist/${notif.playlist_id}`)
+  } else if (notif.album_id) {
+    navigate(`/album/${notif.album_id}`)
+  }
+}
 
   const markAllRead = async () => {
     await supabase
@@ -125,14 +127,23 @@ function Navbar({ user }) {
   }
 
   const getNotifText = (notif) => {
-    const name = notif.fromProfile?.username || 'Someone'
-    switch (notif.type) {
-      case 'like': return <><strong>{name}</strong> liked your review</>
-      case 'comment': return <><strong>{name}</strong> commented: "{notif.comment_text?.slice(0, 30)}{notif.comment_text?.length > 30 ? '...' : ''}"</>
-      case 'follow': return <><strong>{name}</strong> started following you</>
-      default: return <><strong>{name}</strong> interacted with you</>
-    }
+  const name = notif.fromProfile?.username || 'Someone'
+  switch (notif.type) {
+    case 'like': 
+      return <><strong>{name}</strong> liked your review</>
+    case 'comment': 
+      return <><strong>{name}</strong> commented: "{notif.comment_text?.slice(0, 30)}{notif.comment_text?.length > 30 ? '...' : ''}"</>
+    case 'follow': 
+      return <><strong>{name}</strong> started following you</>
+    case 'playlist_like': 
+      return <><strong>{name}</strong> liked your playlist</>
+    case 'playlist_comment': 
+      return <><strong>{name}</strong> commented on your playlist: "{notif.comment_text?.slice(0, 30)}{notif.comment_text?.length > 30 ? '...' : ''}"</>
+    default: 
+      return <><strong>{name}</strong> interacted with you</>
   }
+}
+
 
   const timeAgo = (date) => {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000)

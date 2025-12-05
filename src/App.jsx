@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState, useEffect } from 'react'
 import { supabase, authService } from './services/supabase'
 import { spotifyService } from './services/spotify'
+import { ToastProvider } from './components/Toast'
 import "./styles/App.css";
 
 // Import components
@@ -54,28 +55,30 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="App">
-        {user && <Navbar user={user} />}
-        
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={!user ? <Home /> : <Navigate to="/albums" />} />
-          <Route path="/login" element={!user ? <Login /> : <Navigate to="/albums" />} />
-          <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/albums" />} />
+    <ToastProvider>
+      <Router>
+        <div className="App">
+          {user && <Navbar user={user} />}
           
-          {/* Protected routes */}
-          <Route path="/albums" element={user ? <Albums /> : <Navigate to="/login" />} />
-          <Route path="/album/:id" element={user ? <AlbumDetail /> : <Navigate to="/login" />} />
-          <Route path="/profile/:userId" element={user ? <Profile /> : <Navigate to="/login" />} />
-          <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
-          <Route path="/playlists" element={user ? <Playlists /> : <Navigate to="/login" />} />
-          <Route path="/playlist/:id" element={user ? <PlaylistDetail /> : <Navigate to="/login" />} />
-          <Route path="/search" element={user ? <Search /> : <Navigate to="/login" />} />
-          <Route path="/find" element={user ? <Find /> : <Navigate to="/login" />} />
-        </Routes>
-      </div>
-    </Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={!user ? <Home /> : <Navigate to="/albums" />} />
+            <Route path="/login" element={!user ? <Login /> : <Navigate to="/albums" />} />
+            <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/albums" />} />
+            
+            {/* Protected routes */}
+            <Route path="/albums" element={user ? <Albums /> : <Navigate to="/login" />} />
+            <Route path="/album/:id" element={user ? <AlbumDetail /> : <Navigate to="/login" />} />
+            <Route path="/profile/:userId" element={user ? <Profile /> : <Navigate to="/login" />} />
+            <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+            <Route path="/playlists" element={user ? <Playlists /> : <Navigate to="/login" />} />
+            <Route path="/playlist/:id" element={user ? <PlaylistDetail /> : <Navigate to="/login" />} />
+            <Route path="/search" element={user ? <Search /> : <Navigate to="/login" />} />
+            <Route path="/find" element={user ? <Find /> : <Navigate to="/login" />} />
+          </Routes>
+        </div>
+      </Router>
+    </ToastProvider>
   )
 }
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { spotifyService } from '../../services/spotify'
+import { useToast } from '../../components/Toast'
 import { ProfilePageSkeleton } from '../../components/Skeleton'
 import './Profile.css'
 import FollowsModal from './FollowsModal'
@@ -16,10 +17,12 @@ const LIMITS = {
 function Profile() {
   const { userId } = useParams()
   const navigate = useNavigate()
+  const toast = useToast()
   const [currentUser, setCurrentUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteReviewConfirm, setShowDeleteReviewConfirm] = useState(false)
   const [editUsername, setEditUsername] = useState('')
   const [editBio, setEditBio] = useState('')
   const [avatarFile, setAvatarFile] = useState(null)
@@ -188,13 +191,19 @@ function Profile() {
   }
 
   const handleAddFavorite = async (album) => {
-    if (!currentUser) return
-    const exists = favoriteAlbums.find(f => f.album_id === album.id)
-    if (exists) { alert('This album is already in your favorites!'); return }
-    if (favoriteAlbums.length >= 4) { alert('You can only have 4 favorite albums. Remove one first.'); return }
-    const { error } = await supabase.from('favorite_albums').insert({ user_id: currentUser.id, album_id: album.id, album_name: album.name, album_cover: album.images?.[0]?.url, artist_name: album.artists?.map(a => a.name).join(', '), position: favoriteAlbums.length + 1 })
-    if (!error) { setFavoriteAlbums([...favoriteAlbums, { album_id: album.id, album }]); setShowFavoritesModal(false); setFavSearchQuery(''); setFavSearchResults([]) }
+  if (!currentUser) return
+  const exists = favoriteAlbums.find(f => f.album_id === album.id)
+  if (exists) { toast.error('This album is already in your favorites!'); return }
+  if (favoriteAlbums.length >= 4) { toast.error('You can only have 4 favorite albums. Remove one first.'); return }
+  const { error } = await supabase.from('favorite_albums').insert({ user_id: currentUser.id, album_id: album.id, album_name: album.name, album_cover: album.images?.[0]?.url, artist_name: album.artists?.map(a => a.name).join(', '), position: favoriteAlbums.length + 1 })
+  if (!error) { 
+    setFavoriteAlbums([...favoriteAlbums, { album_id: album.id, album }])
+    setShowFavoritesModal(false)
+    setFavSearchQuery('')
+    setFavSearchResults([])
+    toast.success('Added to favorites!')
   }
+}
 
   const handleRemoveFavorite = async (albumId) => {
     if (!currentUser) return
@@ -203,49 +212,67 @@ function Profile() {
   }
 
   const handleFollowClick = async () => {
-    if (!currentUser) { alert('Please log in to follow users'); return }
-    const profileId = userId || profile?.id
-    
-    if (isFollowing) {
-      // Unfollow
-      const { error } = await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', profileId)
-      if (!error) { 
-        setIsFollowing(false)
-        setStats(prev => ({ ...prev, followersCount: prev.followersCount - 1 }))
-      }
-    } else {
-      // Follow
-      const { error } = await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: profileId })
-      if (!error) { 
-        setIsFollowing(true)
-        setStats(prev => ({ ...prev, followersCount: prev.followersCount + 1 }))
-        
-        // Send follow notification
-        await supabase.from('notifications').insert({
-          user_id: profileId,
-          from_user_id: currentUser.id,
-          type: 'follow'
-        })
-      }
+  if (!currentUser) { toast.error('Please log in to follow users'); return }
+  const profileId = userId || profile?.id
+  
+  if (isFollowing) {
+    const { error } = await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', profileId)
+    if (!error) { 
+      setIsFollowing(false)
+      setStats(prev => ({ ...prev, followersCount: prev.followersCount - 1 }))
+    }
+  } else {
+    const { error } = await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: profileId })
+    if (!error) { 
+      setIsFollowing(true)
+      setStats(prev => ({ ...prev, followersCount: prev.followersCount + 1 }))
+      await supabase.from('notifications').insert({
+        user_id: profileId,
+        from_user_id: currentUser.id,
+        type: 'follow'
+      })
     }
   }
+}
 
   const handleEditReview = (review) => { setEditingReview(review); setModalRating(review.rating || 0); setReviewText(review.review_text || ''); setShowReviewModal(true) }
 
   const handleSaveReview = async () => {
-    if (!editingReview || !modalRating) return
-    const { error } = await supabase.from('reviews').update({ rating: modalRating, review_text: reviewText }).eq('id', editingReview.id)
-    if (!error) { setShowReviewModal(false); setEditingReview(null); fetchData() }
-    else alert('Error updating review: ' + error.message)
+  if (!editingReview || !modalRating) return
+  const { error } = await supabase.from('reviews').update({ rating: modalRating, review_text: reviewText }).eq('id', editingReview.id)
+  if (!error) { 
+    setShowReviewModal(false)
+    setEditingReview(null)
+    fetchData()
+    toast.success('Review updated!')
+  } else {
+    toast.error('Error updating review')
   }
+}
 
   const handleDeleteReview = async () => {
-    if (!editingReview) return
-    if (!confirm('Are you sure you want to delete this review?')) return
-    const { error } = await supabase.from('reviews').delete().eq('id', editingReview.id)
-    if (!error) { setShowReviewModal(false); setEditingReview(null); fetchData() }
-    else alert('Error deleting review: ' + error.message)
+  if (!editingReview) return
+  setShowDeleteReviewConfirm(true)
+}
+
+const confirmDeleteReview = async () => {
+  const { error } = await supabase.from('reviews').delete().eq('id', editingReview.id)
+  if (!error) { 
+    setShowReviewModal(false)
+    setShowDeleteReviewConfirm(false)
+    setEditingReview(null)
+    fetchData()
+    toast.success('Review deleted')
+  } else {
+    toast.error('Error deleting review')
   }
+}
+
+const handleShare = () => {
+  const url = window.location.href
+  navigator.clipboard.writeText(url)
+  toast.success('Link copied to clipboard!')
+}
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -301,6 +328,7 @@ function Profile() {
           <button className="action-btn" onClick={() => navigate('/albums')}>post review</button>
           <button className="action-btn" onClick={() => navigate('/playlists')}>make playlist</button>
           <button className="action-btn" onClick={() => setShowEditModal(true)}>edit profile</button>
+          <button className="action-btn" onClick={handleShare}>share</button>
         </div>
       ) : (
         <div className="profile-actions">
@@ -485,6 +513,19 @@ function Profile() {
           </div>
         </div>
       )}
+
+      {showDeleteReviewConfirm && (
+  <div className="modal-overlay" onClick={() => setShowDeleteReviewConfirm(false)}>
+    <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <h2 className="modal-title">delete review?</h2>
+      <p style={{ color: '#999', marginBottom: '20px' }}>Are you sure you want to delete this review? This cannot be undone.</p>
+      <div className="modal-buttons">
+        <button className="modal-btn cancel" onClick={() => setShowDeleteReviewConfirm(false)}>cancel</button>
+        <button className="modal-btn delete" onClick={confirmDeleteReview}>delete</button>
+      </div>
+    </div>
+  </div>
+)}
 
       {showFollowsModal && (
         <FollowsModal 
