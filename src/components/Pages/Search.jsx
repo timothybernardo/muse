@@ -151,12 +151,11 @@ function Search() {
             <div className="user-avatar placeholder" />
           )}
           <h3 className="user-name">{user.username}</h3>
-          {user.bio && <p className="user-bio">{user.bio}</p>}
+          {/* Bio removed from display */}
         </div>
       ))}
     </div>
   )
-
   const renderSkeletons = () => {
     if (activeTab === 'albums') {
       return (
