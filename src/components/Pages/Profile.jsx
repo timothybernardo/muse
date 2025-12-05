@@ -268,12 +268,6 @@ const confirmDeleteReview = async () => {
   }
 }
 
-const handleShare = () => {
-  const url = window.location.href
-  navigator.clipboard.writeText(url)
-  toast.success('Link copied to clipboard!')
-}
-
   const formatDate = (dateString) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -328,7 +322,6 @@ const handleShare = () => {
           <button className="action-btn" onClick={() => navigate('/albums')}>post review</button>
           <button className="action-btn" onClick={() => navigate('/playlists')}>make playlist</button>
           <button className="action-btn" onClick={() => setShowEditModal(true)}>edit profile</button>
-          <button className="action-btn" onClick={handleShare}>share</button>
         </div>
       ) : (
         <div className="profile-actions">
@@ -355,7 +348,7 @@ const handleShare = () => {
                 <p className="album-title">{fav.album?.name}</p>
                 <p className="album-artist">{fav.album?.artists?.map(a => a.name).join(', ')}</p>
               </div>
-            )) : <p className="empty-text">No favorite albums yet</p>}
+            )) : <p className="empty-text">no favorite albums yet</p>}
           </div>
         </div>
       </div>
@@ -371,7 +364,7 @@ const handleShare = () => {
                 <p className="album-title">{listen.album?.name}</p>
                 <p className="album-artist">{listen.album?.artists?.map(a => a.name).join(', ')}</p>
               </div>
-            )) : <p className="empty-text">No listens yet</p>}
+            )) : <p className="empty-text">no listens yet</p>}
           </div>
         </div>
       </div>
@@ -396,7 +389,7 @@ const handleShare = () => {
                 {isOwnProfile && <button className="edit-review-btn" onClick={(e) => { e.stopPropagation(); handleEditReview(review) }}>edit</button>}
               </div>
             </div>
-          )) : <p className="empty-text">No reviews yet</p>}
+          )) : <p className="empty-text">no reviews yet</p>}
         </div>
       </div>
 
@@ -411,10 +404,10 @@ const handleShare = () => {
             </div>
             <div className="playlist-albums">
               {playlist.songs?.slice(0, 4).map((song, index) => <img key={index} src={song.album_cover} alt="Album" className="playlist-album-cover" />)}
-              {playlist.songs?.length === 0 && <p className="empty-text">No songs yet</p>}
+              {playlist.songs?.length === 0 && <p className="empty-text">no songs yet</p>}
             </div>
           </div>
-        )) : <p className="empty-text">No playlists yet</p>}
+        )) : <p className="empty-text">no playlists yet</p>}
       </div>
 
       {showEditModal && (
