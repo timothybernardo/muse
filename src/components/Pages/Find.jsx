@@ -8,8 +8,6 @@ function Find() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
-  const [response, setResponse] = useState('')
-  const [recommendations, setRecommendations] = useState([])
   const [userContext, setUserContext] = useState(null)
   const [chatHistory, setChatHistory] = useState([])
 
@@ -54,6 +52,7 @@ function Find() {
     const userMessage = query
     setQuery('')
     
+    // Add user message to chat
     setChatHistory(prev => [...prev, { role: 'user', content: userMessage }])
 
     try {
@@ -73,10 +72,15 @@ For example:
 
 Keep responses conversational but include 3-5 album recommendations when appropriate. Be enthusiastic about music!${contextPrompt}`
 
-      // Groq uses OpenAI-style format
+      // Build messages for API (exclude albums from history)
+      const apiMessages = chatHistory.map(m => ({ 
+        role: m.role, 
+        content: m.content 
+      }))
+
       const messages = [
         { role: 'system', content: systemPrompt },
-        ...chatHistory.map(m => ({ role: m.role, content: m.content })),
+        ...apiMessages,
         { role: 'user', content: userMessage }
       ]
 
@@ -96,8 +100,6 @@ Keep responses conversational but include 3-5 album recommendations when appropr
       const data = await response.json()
       const aiResponse = data.choices?.[0]?.message?.content || 'Sorry, I had trouble responding. Try again!'
 
-      setChatHistory(prev => [...prev, { role: 'assistant', content: aiResponse }])
-
       // Extract album recommendations from response
       const albumMatches = aiResponse.matchAll(/\[ALBUM:\s*([^|]+)\s*\|\s*([^\]]+)\]/g)
       const albumsToSearch = []
@@ -106,6 +108,8 @@ Keep responses conversational but include 3-5 album recommendations when appropr
         albumsToSearch.push({ name: match[1].trim(), artist: match[2].trim() })
       }
 
+      // Search Spotify for each recommended album
+      let albums = []
       if (albumsToSearch.length > 0) {
         const foundAlbums = await Promise.all(
           albumsToSearch.map(async ({ name, artist }) => {
@@ -117,16 +121,22 @@ Keep responses conversational but include 3-5 album recommendations when appropr
             }
           })
         )
-        setRecommendations(foundAlbums.filter(a => a !== null))
-      } else {
-        setRecommendations([])
+        albums = foundAlbums.filter(a => a !== null)
       }
+
+      // Add AI response with its albums to chat history
+      setChatHistory(prev => [...prev, { 
+        role: 'assistant', 
+        content: aiResponse,
+        albums: albums
+      }])
 
     } catch (error) {
       console.error('Error:', error)
       setChatHistory(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, I had trouble connecting. Please try again!' 
+        content: 'Sorry, I had trouble connecting. Please try again!',
+        albums: []
       }])
     } finally {
       setLoading(false)
@@ -182,6 +192,31 @@ Keep responses conversational but include 3-5 album recommendations when appropr
                       : message.content
                     }
                   </div>
+                  
+                  {/* Inline album recommendations for this message */}
+                  {message.albums && message.albums.length > 0 && (
+                    <div className="message-recommendations">
+                      {message.albums.map(album => (
+                        <div 
+                          key={album.id} 
+                          className="recommendation-card"
+                          onClick={() => navigate(`/album/${album.id}`)}
+                        >
+                          <img 
+                            src={album.images?.[0]?.url} 
+                            alt={album.name} 
+                            className="recommendation-cover"
+                          />
+                          <div className="recommendation-info">
+                            <p className="recommendation-name">{album.name}</p>
+                            <p className="recommendation-artist">
+                              {album.artists?.map(a => a.name).join(', ')}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
               {loading && (
@@ -191,33 +226,6 @@ Keep responses conversational but include 3-5 album recommendations when appropr
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {recommendations.length > 0 && (
-            <div className="recommendations">
-              <h3 className="recommendations-title">recommended albums</h3>
-              <div className="recommendations-grid">
-                {recommendations.map(album => (
-                  <div 
-                    key={album.id} 
-                    className="recommendation-card"
-                    onClick={() => navigate(`/album/${album.id}`)}
-                  >
-                    <img 
-                      src={album.images?.[0]?.url} 
-                      alt={album.name} 
-                      className="recommendation-cover"
-                    />
-                    <div className="recommendation-info">
-                      <p className="recommendation-name">{album.name}</p>
-                      <p className="recommendation-artist">
-                        {album.artists?.map(a => a.name).join(', ')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>

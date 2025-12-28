@@ -263,3 +263,16 @@
   background: #7b4739;
   border-radius: 4px;
 }
+
+.message-recommendations {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.message-recommendations .recommendation-card {
+  flex-shrink: 0;
+  width: 120px;
+}
