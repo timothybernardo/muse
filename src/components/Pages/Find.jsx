@@ -21,7 +21,6 @@ function Find() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        // Get user's recent listens and reviews for context
         const { data: reviews } = await supabase
           .from('reviews')
           .select('album_id, rating')
@@ -55,11 +54,9 @@ function Find() {
     const userMessage = query
     setQuery('')
     
-    // Add user message to chat
     setChatHistory(prev => [...prev, { role: 'user', content: userMessage }])
 
     try {
-      // Build context from user's listening history
       let contextPrompt = ''
       if (userContext && userContext.length > 0) {
         contextPrompt = `\n\nFor context, here are some albums this user has listened to and rated:\n${userContext.map(a => `- ${a.name} by ${a.artist} (rated ${a.rating}/5)`).join('\n')}`
@@ -76,34 +73,29 @@ For example:
 
 Keep responses conversational but include 3-5 album recommendations when appropriate. Be enthusiastic about music!${contextPrompt}`
 
-      const geminiMessages = [
-        ...chatHistory.map(m => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }]
-        })),
-        { role: 'user', parts: [{ text: userMessage }] }
+      // Groq uses OpenAI-style format
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...chatHistory.map(m => ({ role: m.role, content: m.content })),
+        { role: 'user', content: userMessage }
       ]
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: geminiMessages,
-            systemInstruction: {
-              parts: [{ text: systemPrompt }]
-            }
-          })
-        }
-      )
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: messages,
+          max_tokens: 1000
+        })
+      })
 
       const data = await response.json()
-      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I had trouble responding. Try again!'
+      const aiResponse = data.choices?.[0]?.message?.content || 'Sorry, I had trouble responding. Try again!'
 
-      // Add AI response to chat
       setChatHistory(prev => [...prev, { role: 'assistant', content: aiResponse }])
 
       // Extract album recommendations from response
@@ -114,7 +106,6 @@ Keep responses conversational but include 3-5 album recommendations when appropr
         albumsToSearch.push({ name: match[1].trim(), artist: match[2].trim() })
       }
 
-      // Search Spotify for each recommended album
       if (albumsToSearch.length > 0) {
         const foundAlbums = await Promise.all(
           albumsToSearch.map(async ({ name, artist }) => {
@@ -165,7 +156,6 @@ Keep responses conversational but include 3-5 album recommendations when appropr
           <p className="find-subtitle">tell me what you're in the mood for</p>
         </div>
 
-        {/* Chat History */}
         <div className="chat-container">
           {chatHistory.length === 0 ? (
             <div className="suggestions">
@@ -204,7 +194,6 @@ Keep responses conversational but include 3-5 album recommendations when appropr
             </div>
           )}
 
-          {/* Album Recommendations */}
           {recommendations.length > 0 && (
             <div className="recommendations">
               <h3 className="recommendations-title">recommended albums</h3>
@@ -233,7 +222,6 @@ Keep responses conversational but include 3-5 album recommendations when appropr
           )}
         </div>
 
-        {/* Input */}
         <div className="find-input-container">
           <input
             type="text"
