@@ -234,41 +234,28 @@ function PlaylistDetail() {
   }
 
   const handleUpdatePlaylist = async () => {
-    if (!editTitle.trim()) {
-  toast.error('Playlist name cannot be empty')
-  return
-}
-// After success:
-setPlaylist({ ...playlist, title: editTitle, description: editDescription })
-setShowEditModal(false)
-toast.success('Playlist updated!')
-
-// In confirmRemoveSong, replace the alert:
-if (error) {
-  console.error('Error removing song:', error)
-  toast.error('Error removing song')
-} else {
-  fetchPlaylist()
-  toast.success('Song removed')
-}
-
-
-    const { error } = await supabase
-      .from('playlists')
-      .update({ 
-        title: editTitle.slice(0, LIMITS.playlistName), 
-        description: editDescription.slice(0, LIMITS.playlistDescription) 
-      })
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error updating playlist:', error)
-      alert('Error updating playlist: ' + error.message)
-    } else {
-      setPlaylist({ ...playlist, title: editTitle, description: editDescription })
-      setShowEditModal(false)
-    }
+  if (!editTitle.trim()) {
+    toast.error('Playlist name cannot be empty')
+    return
   }
+
+  const { error } = await supabase
+    .from('playlists')
+    .update({ 
+      title: editTitle.slice(0, LIMITS.playlistName), 
+      description: editDescription.slice(0, LIMITS.playlistDescription) 
+    })
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error updating playlist:', error)
+    toast.error('Error updating playlist')
+  } else {
+    setPlaylist({ ...playlist, title: editTitle, description: editDescription })
+    setShowEditModal(false)
+    toast.success('Playlist updated!')
+  }
+}
 
   const handleRemoveSong = async (song) => {
     setSongToRemove(song)
