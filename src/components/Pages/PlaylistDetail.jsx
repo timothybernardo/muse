@@ -234,18 +234,25 @@ function PlaylistDetail() {
   }
 
   const handleUpdatePlaylist = async () => {
+  console.log('id:', id)
+  console.log('editTitle:', editTitle)
+  
   if (!editTitle.trim()) {
     toast.error('Playlist name cannot be empty')
     return
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('playlists')
     .update({ 
       title: editTitle.slice(0, LIMITS.playlistName), 
       description: editDescription.slice(0, LIMITS.playlistDescription) 
     })
     .eq('id', id)
+    .select()
+
+  console.log('data:', data)
+  console.log('error:', error)
 
   if (error) {
     console.error('Error updating playlist:', error)
