@@ -51,6 +51,9 @@ A music discovery and review platform where users can rate albums, write reviews
 ![Find Page](https://github.com/user-attachments/assets/7aa213b2-3173-485d-b81e-b72ee8dd385c)
 ![Playlist Page](https://github.com/user-attachments/assets/290a8a48-f7f2-492c-acba-ff98212f9bd2)
 
+## AI Assistance
+Parts of this project were developed with the help of AI tools (Claude), particularly for brainstorming, debugging, and drafting initial code. All code was reviewed, modified, and integrated by me.
+
 ## 🤝 Contact
 
 **Timothy Bernardo**  
